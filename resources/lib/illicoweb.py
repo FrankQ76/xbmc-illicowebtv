@@ -27,6 +27,18 @@ import xbmcaddon
 import xbmcvfs
 import simplejson
 
+import functools
+import ssl
+
+old_init = ssl.SSLSocket.__init__
+
+@functools.wraps(old_init)
+def ubuntu_openssl_bug_965371(self, *args, **kwargs):
+  kwargs['ssl_version'] = ssl.PROTOCOL_TLSv1
+  old_init(self, *args, **kwargs)
+
+ssl.SSLSocket.__init__ = ubuntu_openssl_bug_965371
+
 from urllib import quote_plus, unquote_plus
 from traceback import print_exc
 
@@ -770,7 +782,7 @@ class Main( viewtype ):
         rtmp = path[:path.rfind('/')]
         playpath = ' Playpath=' + path[path.rfind('/')+1:]
         pageurl = ' pageUrl=' + unquote_plus(self.args.episode).replace( " ", "+" )
-        swfurl = ' swfUrl=https://illicoweb.videotron.com/swf/vplayer_v1-3_215_prd.swf swfVfy=1'
+        swfurl = ' swfUrl=http://illicoweb.videotron.com/swf/vplayer_v1-4_216_prd.swf swfVfy=1'
         
         win = xbmcgui.Window(10000)
         win.setProperty('illico.playing.title', xbmc.getInfoLabel( "ListItem.Property(playLabel)" ))
@@ -801,7 +813,7 @@ class Main( viewtype ):
                
     def _checkCookies(self):
         # Check if cookies have expired.
-        COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
+        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
         addon_log('These are the cookies we have in the cookie file:')
         for i in COOKIE_JAR:
@@ -825,7 +837,7 @@ class Main( viewtype ):
             data = getRequest(url,None,None)
             addon_log('These are the cookies we have after https://illicoweb.videotron.com/accueil:')
 
-        COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=True)
+        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
         for i in COOKIE_JAR:
             cookies[i.name] = i.value
