@@ -25,7 +25,7 @@ import xbmc
 import xbmcgui
 import xbmcaddon
 import xbmcvfs
-import simplejson
+import json
 
 import functools
 import ssl
@@ -50,7 +50,7 @@ from urlparse import urlparse
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "1.4.0"
+ADDON_VERSION = "1.5.0"
 ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
@@ -174,7 +174,7 @@ class Main( viewtype ):
                 url = '/' + url[:url.rfind(',')]
                 data = self._getShowJSON(url)
                 
-                seasons = simplejson.loads(data)['body']['SeasonHierarchy']['seasons']
+                seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
 
                 # [body][SeasonHierarchy][seasons] seasons
                 for i in seasons:
@@ -184,7 +184,7 @@ class Main( viewtype ):
                             setWatched( ep['orderURI'] + '*' + ep['title'], bool( self.args.setunwatched ), False)
 
                 # [body][main] seasons
-                i = simplejson.loads(data)['body']['main']
+                i = json.loads(data)['body']['main']
                 if(str(i['seasonNo']) == seasonNo):
                     for ep in i['episodes']:
                         setWatched( ep['orderURI'] + '*' + ep['title'], bool( self.args.setunwatched ), False)
@@ -543,7 +543,7 @@ class Main( viewtype ):
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +url
         data = getRequest(url,urllib.urlencode(values),headers)
 
-        sections = simplejson.loads(data)['body']['main']['sections']
+        sections = json.loads(data)['body']['main']['sections']
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         return getRequest(url,urllib.urlencode(values),headers)        
@@ -562,7 +562,7 @@ class Main( viewtype ):
         values = {}
         data = getRequest(url,urllib.urlencode(values),headers)
 
-        jsonList = simplejson.loads(data)['body']['main']
+        jsonList = json.loads(data)['body']['main']
       
         for i in jsonList:
             if i['name'] == label:
@@ -582,16 +582,16 @@ class Main( viewtype ):
         
         # get Channel sections to get URL for JSON shows
         data = getRequest(url,urllib.urlencode(values),headers)
-        sections = simplejson.loads(data)['body']['main']['sections']
+        sections = json.loads(data)['body']['main']['sections']
 
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         data = getRequest(url,urllib.urlencode(values),headers)
         
         listitems = []
-        seasons = simplejson.loads(data)['body']
+        seasons = json.loads(data)['body']
         if 'SeasonHierarchy' in seasons:
-            seasons = simplejson.loads(data)['body']['SeasonHierarchy']['seasons']
+            seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
             for i in seasons:
                 # [body][SeasonHierarchy][seasons] seasons
                 if seasonNo > 0:
@@ -600,7 +600,7 @@ class Main( viewtype ):
                         return i
                 else: self._addSeasonsToShow(i,listitems)
                 
-        i = simplejson.loads(data)['body']['main']
+        i = json.loads(data)['body']['main']
         if not 'seasonNo' in i:
             # no season information, play show directly
             self._playEpisode(i['orderURI'])
@@ -633,7 +633,7 @@ class Main( viewtype ):
         addon_log("Getting fanart from URL: " + url)
         fanart = self._getChannelFanartImg(data)
 
-        i = simplejson.loads(data)['body']['main']['provider']
+        i = json.loads(data)['body']['main']['provider']
         
         livelist = []
         if i['name'] == 'Galaxie':
@@ -647,7 +647,7 @@ class Main( viewtype ):
             if data is None:
                 return
             
-            shows = simplejson.loads(data)['body']['main']['submenus']
+            shows = json.loads(data)['body']['main']['submenus']
         
         return shows, fanart, livelist
 
@@ -661,7 +661,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         #data = self._getChannelShowsJSON(data)
         
-        channels = simplejson.loads(data)['body']['main']['provider']['channels']   
+        channels = json.loads(data)['body']['main']['provider']['channels']   
 
         for i in channels:
             if i['name'] == label:
@@ -677,7 +677,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         data = self._getChannelShowsJSON(data)
         
-        shows = simplejson.loads(data)['body']['main']['submenus']   
+        shows = json.loads(data)['body']['main']['submenus']   
 
         for i in shows:
             if 'submenus' in i:
@@ -689,7 +689,7 @@ class Main( viewtype ):
                     return i
     
     def _getEpisodes(self, data, season, title=None):
-        seasons = simplejson.loads(data)['body']['SeasonHierarchy']['seasons']
+        seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
         listitems = []
 
         # [body][SeasonHierarchy][seasons] seasons
@@ -701,7 +701,7 @@ class Main( viewtype ):
                             self._addEpisode(ep, listitems)
                     else: self._addEpisode(ep, listitems)
         # [body][main] seasons
-        i = simplejson.loads(data)['body']['main']
+        i = json.loads(data)['body']['main']
         if(str(i['seasonNo']) == season):
             for ep in i['episodes']:
                 if title:
@@ -712,7 +712,7 @@ class Main( viewtype ):
         return listitems    
 
     def _getChannelShowsJSON(self, data):
-        sections = simplejson.loads(data)['body']['main']['sections']
+        sections = json.loads(data)['body']['main']['sections']
         onDemand = False
         for i in sections:
             if 'widgetType' in i:
@@ -729,7 +729,7 @@ class Main( viewtype ):
         return getRequest(url,urllib.urlencode(values),headers)
     
     def _getChannelFanartImg(self, data):
-        sections = simplejson.loads(data)['body']['main']['sections']
+        sections = json.loads(data)['body']['main']['sections']
         onDemand = False
         for i in sections:
             if 'widgetType' in i:
@@ -743,7 +743,7 @@ class Main( viewtype ):
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
             values = {}
             data = getRequest(url,urllib.urlencode(values),headers)
-            img = simplejson.loads(data)['body']['main'][0]
+            img = json.loads(data)['body']['main'][0]
             return 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/' + img['image']    
         except:
             return ''
@@ -777,7 +777,7 @@ class Main( viewtype ):
             addon_log("episode error")
     
     def _play(self, data, pid, options={}):
-        path = simplejson.loads(data)['body']['main']['mainToken']
+        path = json.loads(data)['body']['main']['mainToken']
         
         rtmp = path[:path.rfind('/')]
         playpath = ' Playpath=' + path[path.rfind('/')+1:]
@@ -942,7 +942,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
 
         try:
-            jsonList = simplejson.loads(data)['body']['main']
+            jsonList = json.loads(data)['body']['main']
             listitems = []
             
             if os.path.exists( FAVOURITES_XML ):
