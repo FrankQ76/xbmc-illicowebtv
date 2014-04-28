@@ -645,7 +645,7 @@ class Main( viewtype ):
             data = self._getChannelShowsJSON(data)
             # No onDemand content? do nothing
             if data is None:
-                return
+                return "", fanart, livelist
             
             shows = json.loads(data)['body']['main']['submenus']
         
