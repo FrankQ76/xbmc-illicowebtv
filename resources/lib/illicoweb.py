@@ -356,6 +356,8 @@ class Main( viewtype ):
     
     def _addEpisode(self, ep, listitems):
         label = ep['title']
+        if not 'orderURI' in ep:
+            return
         seasonUrl = ep['orderURI']
         OK = False
         try:
@@ -430,9 +432,10 @@ class Main( viewtype ):
                 }
             
             watched = 0
-            for episode in i['episodes']:
-                if episode['title'] in self.watched.get(episode['orderURI'], [] ):
-                    watched += 1
+            #for episode in i['episodes']:
+            #    if episode['title'] in self.watched.get(episode['orderURI'], [] ):
+            #        watched += 1
+
             NombreEpisodes = int( i['size'] or "1")
             unwatched = NombreEpisodes - watched
             addon_log ('Total: %s - Watched: %s = Unwatched: %s' % (str(NombreEpisodes), str(watched),str(unwatched)))
@@ -606,19 +609,23 @@ class Main( viewtype ):
             self._playEpisode(i['orderURI'])
             return
         
-        # [body][main] seasons
-        if seasonNo > 0:
-            if int(i['seasonNo']) == seasonNo:
-                # found specified season, return json
-                return i
-        else: self._addSeasonsToShow(i,listitems)
-        
         if len(listitems) == 1 and seasonNo == 0:
             # only one season for this show, go straight to episode list
             return self._getEpisodes(data, str(i['seasonNo']))
  
         return listitems
 
+    # Returns json of Season from a specific Show's URL
+    def _getSeasonJSON(self, id):
+        self._checkCookies()
+
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                'Referer' : 'https://illicoweb.videotron.com/accueil'}
+        values = {}
+
+        # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
+        url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
+        return getRequest(url,urllib.urlencode(values),headers)
 
     def _getShows(self, url):
         self._checkCookies()
@@ -695,7 +702,9 @@ class Main( viewtype ):
         # [body][SeasonHierarchy][seasons] seasons
         for i in seasons:
             if(str(i['seasonNo']) == season):
-                for ep in i['episodes']:
+                seasonJSON = self._getSeasonJSON(str(i['id']))
+                season = json.loads(seasonJSON)
+                for ep in season['body']['main']['episodes']:
                     if title:
                         if title == ep['title']:
                             self._addEpisode(ep, listitems)
@@ -844,7 +853,6 @@ class Main( viewtype ):
 
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
-
     def _login(self):
             addon_log('Login to get cookies!')
 
