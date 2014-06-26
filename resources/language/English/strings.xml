@@ -17,5 +17,6 @@
   <string id="30014">Enable resuming playback position</string>
   <string id="30015">Enable debugging</string>
   <string id="30016">Timeout! Try again.</string>
+  <string id="30017">Media encrypted - cannot play.</string>
 </strings>
 
