@@ -803,7 +803,7 @@ class Main( viewtype ):
         rtmp = path[:path.rfind('/')]
         playpath = ' Playpath=' + path[path.rfind('/')+1:]
         pageurl = ' pageUrl=' + unquote_plus(self.args.episode).replace( " ", "+" )
-        swfurl = ' swfUrl=http://illicoweb.videotron.com/swf/vplayer_v1-4_216_prd.swf swfVfy=1'
+        swfurl = ' swfUrl=http://illicoweb.videotron.com/swf/vplayer_v1-5_217_prd.swf swfVfy=1'
         
         win = xbmcgui.Window(10000)
         win.setProperty('illico.playing.title', xbmc.getInfoLabel( "ListItem.Property(playLabel)" ))
