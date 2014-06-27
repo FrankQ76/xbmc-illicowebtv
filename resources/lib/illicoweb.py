@@ -50,7 +50,7 @@ from urlparse import urlparse
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "1.6.0"
+ADDON_VERSION = "1.6.1"
 ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
@@ -70,7 +70,41 @@ def addon_log(string):
     if DEBUG == 'true':
         xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string))
 
-def getRequest(url, data=None, headers=None):
+def login():
+        addon_log('Login to get cookies!')
+
+        if not USERNAME or not PASSWORD:
+            xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30004))
+            xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
+            exit(0)
+
+        # Get the cookie first
+        url = 'http://illicoweb.videotron.com/accueil'
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0'}
+        login = getRequest(url,None,headers)
+
+        # now authenticate
+        url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr&password='+PASSWORD+'&userId='+USERNAME
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'https://illicoweb.videotron.com/accueil',
+                   'X-Requested-With' : 'XMLHttpRequest'}
+
+        values = {}
+        login = getRequest(url,urllib.urlencode(values),headers)
+
+        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
+        cookies = {}
+        addon_log('These are the cookies we have received from authenticate.do:')
+        for i in COOKIE_JAR:
+            cookies[i.name] = i.value
+            addon_log('%s: %s' %(i.name, i.value))
+
+        if cookies.has_key('iPlanetDirectoryPro'):
+            return True
+        else:
+            return False
+        
+def getRequest(url, data=None, headers=None, retry=False):
     if not xbmcvfs.exists(COOKIE):
         addon_log('Creating COOKIE!')
         COOKIE_JAR.save()
@@ -103,8 +137,11 @@ def getRequest(url, data=None, headers=None):
             addon_log( 'We failed with error code - %s.' % reason )
             if 'highlights.xml' in url:
                 return
-        if reason:
-            xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+LANGUAGE(30002)+reason+",10000,"+ICON+")")
+        #if reason:
+        #    xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+LANGUAGE(30002)+reason+",10000,"+ICON+")")
+        if reason == '403' and not retry:
+            login()
+            getRequest(url, data, headers, True)
         return  
 
 def getWatched():
@@ -163,7 +200,7 @@ class Main( viewtype ):
             xbmc.executescript(os.path.join(xbmc.translatePath(ADDON.getAddonInfo('path')), 'service.py'))
         
         if self.args.isempty():
-            self._login()
+            login()
             self._add_directory_root()
 
         elif self.args.setwatched or self.args.setunwatched:
@@ -435,7 +472,6 @@ class Main( viewtype ):
             #for episode in i['episodes']:
             #    if episode['title'] in self.watched.get(episode['orderURI'], [] ):
             #        watched += 1
-
             NombreEpisodes = int( i['size'] or "1")
             unwatched = NombreEpisodes - watched
             addon_log ('Total: %s - Watched: %s = Unwatched: %s' % (str(NombreEpisodes), str(watched),str(unwatched)))
@@ -625,7 +661,9 @@ class Main( viewtype ):
 
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
-        return getRequest(url,urllib.urlencode(values),headers)
+        return getRequest(url,urllib.urlencode(values),headers)        
+
+        
 
     def _getShows(self, url):
         self._checkCookies()
@@ -792,7 +830,7 @@ class Main( viewtype ):
         connected = info['head']['userInfo']['clubIllicoStatus']
         
         if connected == 'NOT_CONNECTED':
-            if not self._login():
+            if not login():
                 xbmcgui.Dialog().ok(ADDON_NAME, '%s\n%s' % (LANGUAGE(30004),LANGUAGE(30041)))
                 xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
                 exit(0)                
@@ -800,6 +838,7 @@ class Main( viewtype ):
         if encrypted:
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
             return False
+        
         rtmp = path[:path.rfind('/')]
         playpath = ' Playpath=' + path[path.rfind('/')+1:]
         pageurl = ' pageUrl=' + unquote_plus(self.args.episode).replace( " ", "+" )
@@ -844,50 +883,26 @@ class Main( viewtype ):
             addon_log('We have valid cookies')
             login = 'old'
         else:
-            login = self._login()
+            login = login()
 
         if not login:
             xbmcgui.Dialog().ok(ADDON_NAME, '%s\n%s' % (LANGUAGE(30004),LANGUAGE(30041)))
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
 
+        #if login == 'old':
+            # lets see if we get new cookies
+            # addon_log('old cookies: iPlanetDirectoryPro - %s' %(cookies['iPlanetDirectoryPro']))
+        #    url = 'https://illicoweb.videotron.com/accueil'
+        #    data = getRequest(url,None,None)
+        #    addon_log('These are the cookies we have after https://illicoweb.videotron.com/accueil:')
+
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
-    def _login(self):
-            addon_log('Login to get cookies!')
+        #for i in COOKIE_JAR:
+        #    cookies[i.name] = i.value
+        #    addon_log('%s: %s' %(i.name, i.value))
 
-            if not USERNAME or not PASSWORD:
-                xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30004))
-                xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
-                exit(0)
-
-            # Get the cookie first
-            url = 'http://illicoweb.videotron.com/accueil'
-            headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0'}
-            login = getRequest(url,None,headers)
-
-            # now authenticate
-            url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr&password='+PASSWORD+'&userId='+USERNAME
-            headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
-                       'Referer' : 'https://illicoweb.videotron.com/accueil',
-                       'X-Requested-With' : 'XMLHttpRequest'}
-
-            values = {}
-            login = getRequest(url,urllib.urlencode(values),headers)
-
-            COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
-            cookies = {}
-            addon_log('These are the cookies we have received from authenticate.do:')
-            for i in COOKIE_JAR:
-                cookies[i.name] = i.value
-                addon_log('%s: %s' %(i.name, i.value))
-
-            if cookies.has_key('iPlanetDirectoryPro'):
-                return True
-            else:
-                return False
-
-          
                 
     def _add_directory_favourites( self ):
         OK = False
