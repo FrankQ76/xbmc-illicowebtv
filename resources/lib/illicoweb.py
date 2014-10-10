@@ -1031,6 +1031,8 @@ class Main( viewtype ):
                 uri = '%s?%s="%s*%s"&all=%s' % ( sys.argv[ 0 ], action, url, label, all )
                 c_items += [ ( LANGXBMC( i_label ), "RunPlugin(%s)" % uri ) ]
 
+            c_items += [ ( LANGXBMC(184), "Container.Refresh") ]
+
             self._add_context_menu_items( c_items, listitem )
         except:
             print_exc()
