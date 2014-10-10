@@ -385,7 +385,6 @@ class Main( viewtype ):
             listitem = xbmcgui.ListItem( *item )
             listitem.setProperty( 'playLabel', label )
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'] )
-            #listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg') #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/channels/' + ep['largeLogo'])
             listitem.setProperty( "fanart_image", fanart)
             
             self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False, True )
@@ -399,7 +398,6 @@ class Main( viewtype ):
 
         if listitems:
             listitems = self.natural_sort(listitems, True)
-            addon_log("Adding Episodes to Season")
             OK = self._add_directory_items( listitems )
         self._set_content( OK, "episodes", False )
     
@@ -420,8 +418,8 @@ class Main( viewtype ):
                 "title":       label,
                 #"genre":       genreTitle,
                 "plot":        ep[ 'description' ] or "",
-                "season":      int(ep['seasonNo']) or -1,
-                "episode":     int(ep[ 'episodeNo' ]) or -1,
+                "season":      int(ep['seasonNo'] if 'seasonNo' in ep else "-1") or -1,
+                "episode":     int(ep[ 'episodeNo' ] if 'episodeNo' in ep else "-1") or -1,
                 "year":        int( ep[ "released" ] or "0" ),
                 #"Aired":       episode[ "AirDateLongString" ] or "",
                 "mpaa":        ep[ 'rating' ] or "",
@@ -473,9 +471,9 @@ class Main( viewtype ):
                 "genre":       i['genre'],
                 "year":        int( i['released'] ),
                 #"tagline":     ( STRING_FOR_ALL, "" )[ bool( GeoTargeting ) ],
-                "duration":    i['lengthInMinutes'] or "",
+                "duration":    i['lengthInMinutes'] if 'lengthInMinutes' in i else '0',
                 #"episode":     NombreEpisodes,
-                "season":      int(i['seasonNo']) or -1,
+                "season":      int(seasonNo) or -1,
                 "plot":        description,
                 #"premiered":   emission.get( "premiered" ) or "",
                 }
@@ -484,7 +482,8 @@ class Main( viewtype ):
             #for episode in i['episodes']:
             #    if episode['title'] in self.watched.get(episode['orderURI'], [] ):
             #        watched += 1
-            NombreEpisodes = int( i['size'] or "1")
+            NombreEpisodes = int( i['size'] if 'size' in i else "1")
+            if NombreEpisodes == 0: NombreEpisodes = 99
             unwatched = NombreEpisodes - watched
             addon_log ('Total: %s - Watched: %s = Unwatched: %s' % (str(NombreEpisodes), str(watched),str(unwatched)))
 
@@ -495,7 +494,7 @@ class Main( viewtype ):
             overlay = ( xbmcgui.ICON_OVERLAY_NONE, xbmcgui.ICON_OVERLAY_WATCHED )[ playCount ]
             infoLabels.update( { "playCount": playCount, "overlay": overlay } )
             
-            listitem.setInfo( "Music", infoLabels )
+            listitem.setInfo( "Video", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/thumb/' + i['image'] )
@@ -614,7 +613,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
 
         jsonList = json.loads(data)['body']['main']
-      
+
         for i in jsonList:
             if i['name'] == label:
                 return i
@@ -630,7 +629,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        
+
         # get Channel sections to get URL for JSON shows
         data = getRequest(url,urllib.urlencode(values),headers)
         sections = json.loads(data)['body']['main']['sections']
