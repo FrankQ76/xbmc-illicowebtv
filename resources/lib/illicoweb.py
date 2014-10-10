@@ -240,6 +240,7 @@ class Main( viewtype ):
         elif self.args.addtofavourites or self.args.removefromfavourites:
             #turn dict back into url, decode it and format it in xml
             f = unquote_plus( self.args.addtofavourites or self.args.removefromfavourites )
+
             f = parse_qs(urlparse('?' + f.replace( ", ", "&" ).replace('"','%22')).query)
             favourite = '<favourite label="%s" category="%s" url="%s" />' % (unquote_plus(f['label'][0]), f['category'][0], f['url'][0])
 
@@ -306,15 +307,18 @@ class Main( viewtype ):
             self._set_content( OK, "episodes", False )
 
         elif self.args.show:
-            OK = False
-            listitems = self._getSeasons(unquote_plus(self.args.show).replace( " ", "+" ))
-            
-            if listitems:
-                from operator import itemgetter
-                listitems = self.natural_sort(listitems, True)
-                addon_log("Adding Seasons to Show")
-                OK = self._add_directory_items( listitems )
-            self._set_content( OK, "episodes", False )
+            try:
+                OK = False
+                listitems = self._getSeasons(unquote_plus(self.args.show).replace( " ", "+" ))
+
+                if listitems:
+                    from operator import itemgetter
+                    listitems = self.natural_sort(listitems, False)
+
+                    OK = self._add_directory_items( listitems )
+                self._set_content( OK, "episodes", False )
+            except:
+                print_exc()
 
         elif self.args.season:
             url = unquote_plus(self.args.season).replace( " ", "+" )
