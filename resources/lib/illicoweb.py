@@ -106,7 +106,19 @@ def login():
         else:
             return False
         
-def getRequest(url, data=None, headers=None, retry=False):
+def getRequest(url, data=None, headers=None):
+    data = getRequestedUrl(url, data, headers)
+    if data == None:
+        login()
+        data = getRequestedUrl(url, data, headers)
+
+    if data == None:
+        addon_log('No response from server')
+        xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+url+",10000,"+ICON+")")
+
+    return data
+
+def getRequestedUrl(url, data=None, headers=None):
     if not xbmcvfs.exists(COOKIE):
         addon_log('Creating COOKIE!')
         COOKIE_JAR.save()
@@ -123,9 +135,6 @@ def getRequest(url, data=None, headers=None, retry=False):
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         response.close()
         addon_log("getRequest : %s" %url)
-        #addon_log(response.info())
-        #if response.geturl() != url:
-            #addon_log('Redirect URL: %s' %response.geturl())
         return data
     except urllib2.URLError, e:
         reason = None
@@ -137,14 +146,11 @@ def getRequest(url, data=None, headers=None, retry=False):
         if hasattr(e, 'code'):
             reason = str(e.code)
             addon_log( 'We failed with error code - %s.' % reason )
-            if 'highlights.xml' in url:
-                return
-        #if reason:
-        #    xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+LANGUAGE(30002)+reason+",10000,"+ICON+")")
-        if reason == '403' and not retry:
-            login()
-            getRequest(url, data, headers, True)
-        return  
+            if (e.code == 401):
+                xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30004))
+                xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
+                exit(0)
+        return None
 
 def getWatched():
     watched = {}
