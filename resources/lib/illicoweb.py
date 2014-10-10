@@ -50,7 +50,7 @@ from urlparse import urlparse
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "1.6.1"
+ADDON_VERSION = "1.7.0"
 ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
@@ -68,6 +68,8 @@ LANGUAGE = ADDON.getLocalizedString
 
 def addon_log(string):
     if DEBUG == 'true':
+        if isinstance(string, unicode):
+            string = string.encode('utf-8')
         xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string))
 
 def login():
