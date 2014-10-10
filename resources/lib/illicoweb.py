@@ -451,9 +451,10 @@ class Main( viewtype ):
             print_exc()
 
     def _addSeasonsToShow(self, i, listitems, title=False):
-        label = 'Saison ' + str(i['seasonNo'])
-        if title: label = '%s - %s' % (i['title'], label)
-        seasonUrl = i['link']['uri'] + ',' + str(i['seasonNo'])
+        seasonNo = i['seasonNo'] if 'seasonNo' in i else 0
+        label = i['title'] + " - " + (LANGUAGE(30018) + " " + str(seasonNo)) if i['objectType'] == "SEASON" else i['title'] 
+        if title and not i['title'] in label: label = '%s - %s' % (i['title'], label)
+        seasonUrl = i['link']['uri'] + ',' + str(seasonNo)
 
         OK = False
         try:
@@ -468,7 +469,7 @@ class Main( viewtype ):
             infoLabels = {
                 "tvshowtitle": label,
                 "title":       label,
-                "genre":       i['genre'],
+                "genre":       i['genre'] if 'genre' in i else '',
                 "year":        int( i['released'] ),
                 #"tagline":     ( STRING_FOR_ALL, "" )[ bool( GeoTargeting ) ],
                 "duration":    i['lengthInMinutes'] if 'lengthInMinutes' in i else '0',
@@ -477,7 +478,7 @@ class Main( viewtype ):
                 "plot":        description,
                 #"premiered":   emission.get( "premiered" ) or "",
                 }
-            
+
             watched = 0
             #for episode in i['episodes']:
             #    if episode['title'] in self.watched.get(episode['orderURI'], [] ):
@@ -499,7 +500,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playLabel', label )
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/thumb/' + i['image'] )
             listitem.setProperty( "fanart_image", xbmc.getInfoLabel( "ListItem.Property(fanart_image)" )) #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/thumb/' + i['image'])
-            
+
             self._add_context_menu( i['title'], seasonUrl, 'season', listitem, not unwatched )
             listitems.append( ( url, listitem, True ) )
         except:
@@ -532,7 +533,7 @@ class Main( viewtype ):
     
     
     def _addShowToChannel(self, season, listitems, fanart, url=None):
-        label = season['label']
+        label = season['label'] if 'label' in season else season['name']
         if label=='Home':
             return
         OK = False                
@@ -634,6 +635,11 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         sections = json.loads(data)['body']['main']['sections']
 
+        if (len(sections) == 1):
+            # play show directly
+            self._playEpisode(json.loads(data)['body']['main']['provider']['orderURI'])
+            return
+            
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         data = getRequest(url,urllib.urlencode(values),headers)
@@ -649,17 +655,26 @@ class Main( viewtype ):
                         # found specified season, return json
                         return i
                 else: self._addSeasonsToShow(i,listitems)
-                
+
         i = json.loads(data)['body']['main']
-        if not 'seasonNo' in i:
-            # no season information, play show directly
-            self._playEpisode(i['orderURI'])
-            return
-        
-        if len(listitems) == 1 and seasonNo == 0:
+        if type(i) is list:
+            # sub category, loop through shows / episodes
+            for y in i:
+                if 'seasonNo' in y and y['objectType'] != "EPISODE":
+                    self._addSeasonsToShow(y,listitems)
+                else:
+                    self._addEpisode(y, listitems)
+            
+        if len(listitems) == 1 and seasonNo == 0 and 'seasonNo' in i:
             # only one season for this show, go straight to episode list
             return self._getEpisodes(data, str(i['seasonNo']))
- 
+
+        if len(listitems) == 0 and not 'seasonNo' in i:
+
+            # no season information, play show directly
+            self._playEpisode(i[0]['orderURI'] if type(i) is list else i['orderURI'])
+            return
+
         return listitems
 
     # Returns json of Season from a specific Show's URL
