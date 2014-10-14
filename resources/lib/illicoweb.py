@@ -759,7 +759,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         data = self._getChannelShowsJSON(data) or data
         
-        shows = json.loads(data)['body']['main']['submenus']   
+        shows = json.loads(data)['body']['main']
         if not 'submenus' in shows:
             shows = shows['provider']
             if shows['name'] == label:
