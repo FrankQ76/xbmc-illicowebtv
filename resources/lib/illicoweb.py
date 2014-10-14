@@ -239,31 +239,12 @@ class Main( viewtype ):
 
         elif self.args.addtofavourites or self.args.removefromfavourites:
             #turn dict back into url, decode it and format it in xml
-            f = unquote_plus( self.args.addtofavourites or self.args.removefromfavourites )
+            f = self.args.addtofavourites or self.args.removefromfavourites
 
-            f = parse_qs(urlparse('?' + f.replace( ", ", "&" ).replace('"','%22')).query)
-            favourite = '<favourite label="%s" category="%s" url="%s" />' % (unquote_plus(f['label'][0]), f['category'][0], f['url'][0])
 
-            if os.path.exists( FAVOURITES_XML ):
-                favourites = open( FAVOURITES_XML ).read()
-            else:
-                favourites = '<favourites>\n</favourites>\n'
-            if self.args.removefromfavourites or favourite not in favourites:
-                if self.args.removefromfavourites:
-                    addon_log('Removing %s from favourites' % favourite)
-                    favourites = favourites.replace( '  %s\n' % favourite, '' )
-                    refresh = True
-                else:
-                    favourites = favourites.replace( '</favourites>', '  %s\n</favourites>' % (favourite))
-                    refresh = False
-                file( FAVOURITES_XML, "w" ).write( favourites )
-                if refresh:
-                    if favourites == '<favourites>\n</favourites>\n':
-                        try: os.remove( FAVOURITES_XML )
-                        except: pass
-                        xbmc.executebuiltin( 'Action(ParentDir)' )
-                        xbmc.sleep( 1000 )
-                    xbmc.executebuiltin( 'Container.Refresh' )
+            f = parse_qs(urlparse('?' + f.replace( ", ", "&" ).replace('"','%22').replace('+','%2B')).query)
+            remove = True if self.args.removefromfavourites else False
+            self._addToFavourites(unquote_plus(f['label'][0]), f['category'][0], f['url'][0], remove)
         
         elif self.args.favoris:
             self._add_directory_favourites()                    
@@ -327,6 +308,33 @@ class Main( viewtype ):
 
             data = self._getShowJSON(url)
             self._addEpisodesToSeason(data, season)
+
+    def _addToFavourites(self, label, category, url, remove=False):
+        if os.path.exists( FAVOURITES_XML ):
+            favourites = open( FAVOURITES_XML, "r" ).read()
+        else:
+            favourites = '<favourites>\n</favourites>\n'
+        
+        label = label.replace("/plus/","+")
+        
+        favourite = ('<favourite label="%s" category="%s" url="%s" />' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category, url))
+        addon_log("----" + favourite)
+        if remove or favourite not in favourites:
+            if remove:
+                addon_log('Removing %s from favourites' % favourite)
+                favourites = favourites.replace( '  %s\n' % favourite, '' )
+                refresh = True
+            else:
+                favourites = favourites.replace( '</favourites>', '  %s\n</favourites>' % (favourite))
+                refresh = False
+            file( FAVOURITES_XML, "w" ).write( favourites )
+            if refresh:
+                if favourites == '<favourites>\n</favourites>\n':
+                    try: os.remove( FAVOURITES_XML )
+                    except: pass
+                    xbmc.executebuiltin( 'Action(ParentDir)' )
+                    xbmc.sleep( 1000 )
+                xbmc.executebuiltin( 'Container.Refresh' )    
 
     def _addChannel(self, listitems, i, url):
         OK = False                
@@ -639,7 +647,7 @@ class Main( viewtype ):
             # play show directly
             self._playEpisode(json.loads(data)['body']['main']['provider']['orderURI'])
             return
-            
+
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         data = getRequest(url,urllib.urlencode(values),headers)
@@ -711,7 +719,10 @@ class Main( viewtype ):
             shows = i
         else:
             # Add LiveTV to top of show list
-            self._addLiveChannel(livelist, i, '%s?live="%s"', fanart) 
+            try:
+                self._addLiveChannel(livelist, i, '%s?live="%s"', fanart) 
+            except:
+                print_exc() 
         
             data = self._getChannelShowsJSON(data)
             # No onDemand content? do nothing
@@ -890,7 +901,6 @@ class Main( viewtype ):
         item.setPath(final_url)
         
         player = xbmc.Player( xbmc.PLAYER_CORE_DVDPLAYER )
-        #player = xbmc.Player( xbmc.PLAYER_CORE_AUTO )
         player.play(final_url, item)
         
         return True
@@ -916,70 +926,76 @@ class Main( viewtype ):
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
 
-        #if login == 'old':
-            # lets see if we get new cookies
-            # addon_log('old cookies: iPlanetDirectoryPro - %s' %(cookies['iPlanetDirectoryPro']))
-        #    url = 'https://illicoweb.videotron.com/accueil'
-        #    data = getRequest(url,None,None)
-        #    addon_log('These are the cookies we have after https://illicoweb.videotron.com/accueil:')
-
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
-        #for i in COOKIE_JAR:
-        #    cookies[i.name] = i.value
-        #    addon_log('%s: %s' %(i.name, i.value))
 
-                
     def _add_directory_favourites( self ):
         OK = False
         listitems = []
         try:
             from xml.dom.minidom import parseString
-            favourites = parseString( open( FAVOURITES_XML ).read()).getElementsByTagName( "favourite" )
-            
+
+            xmlFav = open( FAVOURITES_XML, "r" ).read()
+            if isinstance(xmlFav, unicode):
+                xmlFav = xmlFav.encode('utf-8')
+            favourites = parseString( xmlFav).getElementsByTagName( "favourite" )
+
             for favourite in favourites:
-                label = favourite.getAttribute( "label" )
-                category  = favourite.getAttribute( "category" )
-                url = favourite.getAttribute( "url" )
+                try:
+                    label = favourite.getAttribute( "label" )
+                    category  = favourite.getAttribute( "category" )
+                    url = favourite.getAttribute( "url" )
 
-                if category == 'channel':
-                    i = self._getChannel(label)
-                    if i:
-                        self._addChannel(listitems, i, '%s?channel="%s"')
+                    if category == 'channel':
+                        i = self._getChannel(label)
+                        if i:
+                            self._addChannel(listitems, i, '%s?channel="%s"')
 
-                elif category == 'live':
-                    i = self._getChannel(label.replace(' - Live', ''))
-                    if i:
-                        i['name'] = label
-                        i['link']['uri'] = i['orderURI']
-                        self._addChannel(listitems, i, '%s?live="%s"')
-                
-                elif category == 'galaxie':
-                    i = self._getGalaxie(url, label)
-                    if i:
-                        self._addChannelToGalaxie(i, listitems, "", url)
-                        
-                elif category == 'show':
-                    i = self._getShow(url, label)
-                    if i:
-                        self._addShowToChannel(i,listitems, "", url)
-                        
-                elif category == 'season':
-                    # split the url to show url and seasonNo
-                    seasonNo = int(url[url.rfind(',')+1:])
-                    url = url[:url.rfind(',')]
-                    i = self._getSeasons(url, seasonNo)
-                    if i:
-                        self._addSeasonsToShow(i, listitems, True)
-                
+                    elif category == 'live':
+                        i = self._getChannel(label.replace(' - Live', ''))
+                        if i:
+                            i['name'] = label.replace(' - Live', " " + LANGUAGE(30003))
+                            i['link']['uri'] = url 
+                            self._addChannel(listitems, i, '%s?live="%s"')
+
+                    elif category == 'galaxie':
+                        i = self._getGalaxie(url, label)
+                        if i:
+
+                            self._addChannelToGalaxie(i, listitems, "", url)
+
+                    elif category == 'show':
+                        i = self._getShow(url, label)
+                        if i:
+
+                            self._addShowToChannel(i,listitems, "", url)
+                            
+                    elif category == 'season':
+                        # split the url to show url and seasonNo
+                        seasonNo = int(url[url.rfind(',')+1:])
+                        url = url[:url.rfind(',')]
+                        i = self._getSeasons(url, seasonNo)
+                        if i:
+                            self._addSeasonsToShow(i, listitems, True)
+                except:
+                    print_exc()
+                    addon_log("-- Favourite no longer exists")
+                    question = label + LANGUAGE(30019)
+                    remove = xbmcgui.Dialog()
+                    remove = remove.yesno(ADDON_NAME, question)
+                    if remove:
+                        self._addToFavourites(label, category, url, True)
         except:
             print_exc()
 
         if listitems:
             addon_log("Adding Favourites")
-            OK = self._add_directory_items( listitems )
-        self._set_content( OK, "episodes", False )                
-                
+            OK = self._add_directory_items( listitems )   
+        else:
+            xbmc.executebuiltin("XBMC.Notification("+ADDON_NAME+", "+LANGUAGE(30020)+",10000,"+ICON+")")
+
+        self._set_content( OK, "episodes", False )  
+
     def _add_directory_root( self ):
         self._checkCookies()
 
@@ -1022,13 +1038,13 @@ class Main( viewtype ):
         try:
             c_items = [] #[ ( LANGXBMC( 20351 ), "Action(Info)" ) ]
     
-            #add to my favoris
+            #add to my favourites
             if category is not 'episode':
                 # all strings must be unicode but encoded, if necessary, as utf-8 to be passed on to urlencode!!
                 if isinstance(label, unicode):
                     labelUri = label.encode('utf-8')
                 f = { 'label' : labelUri, 'category' : category, 'url' : url}
-                uri = '%s?addtofavourites="%s"' % ( sys.argv[ 0 ], urllib.urlencode(f) ) #urlencode(f) )
+                uri = '%s?addtofavourites=%s%s%s' % ( sys.argv[ 0 ], "%22", urllib.urlencode(f), "%22" ) #urlencode(f) )
 
                 if self.args.favoris == "root":
                     c_items += [ ( LANGUAGE(30005), "RunPlugin(%s)" % uri.replace( "addto", "removefrom" ) ) ]
@@ -1079,8 +1095,8 @@ class Main( viewtype ):
 class Info:
     def __init__( self, *args, **kwargs ):
         # update dict with our formatted argv
-        #addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"'))
-        try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"'))
+        #addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
+        try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
         except: print_exc()
         # update dict with custom kwargs
         self.__dict__.update( kwargs )
