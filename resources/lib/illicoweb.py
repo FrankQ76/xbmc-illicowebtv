@@ -50,7 +50,7 @@ from urlparse import urlparse
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "1.7.0"
+ADDON_VERSION = "1.8.0"
 ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
@@ -757,9 +757,15 @@ class Main( viewtype ):
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data = getRequest(url,urllib.urlencode(values),headers)
-        data = self._getChannelShowsJSON(data)
+        data = self._getChannelShowsJSON(data) or data
         
         shows = json.loads(data)['body']['main']['submenus']   
+        if not 'submenus' in shows:
+            shows = shows['provider']
+            if shows['name'] == label:
+                return shows
+        else:
+            shows = shows['submenus']
 
         for i in shows:
             if 'submenus' in i:
@@ -767,8 +773,9 @@ class Main( viewtype ):
                     if show['label'] == label:
                         return show
             else:
-                if i['label'] == label:
-                    return i
+                if ('label' in i):
+                    if i['label'] == label:
+                        return i
     
     def _getEpisodes(self, data, season, title=None):
         seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
