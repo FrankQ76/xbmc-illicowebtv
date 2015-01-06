@@ -111,13 +111,13 @@ def getRequest(url, data=None, headers=None):
     if data == None:
         login()
         data = getRequestedUrl(url, data, headers)
-
+    
     if data == None:
         addon_log('No response from server')
         xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+url+",10000,"+ICON+")")
-
+        
     return data
-
+        
 def getRequestedUrl(url, data=None, headers=None):
     if not xbmcvfs.exists(COOKIE):
         addon_log('Creating COOKIE!')
@@ -240,14 +240,18 @@ class Main( viewtype ):
         elif self.args.addtofavourites or self.args.removefromfavourites:
             #turn dict back into url, decode it and format it in xml
             f = self.args.addtofavourites or self.args.removefromfavourites
-
-
+            addon_log(f.decode('utf-8'))
             f = parse_qs(urlparse('?' + f.replace( ", ", "&" ).replace('"','%22').replace('+','%2B')).query)
+
             remove = True if self.args.removefromfavourites else False
             self._addToFavourites(unquote_plus(f['label'][0]), f['category'][0], f['url'][0], remove)
+                
         
         elif self.args.favoris:
-            self._add_directory_favourites()                    
+            try:
+                self._add_directory_favourites()                    
+            except:
+                print_exc
                     
         elif self.args.live:
             self._playLive(unquote_plus(self.args.live).replace( " ", "+" ))
@@ -264,7 +268,7 @@ class Main( viewtype ):
             listitems = []
             if 'channels' in shows:
                 for channel in shows['channels']:
-                    self._addChannelToGalaxie(channel, listitems, fanart)
+                    self._addChannelToStingray(channel, listitems, fanart)
             else:
                 for i in shows:
                     if 'submenus' in i:
@@ -291,16 +295,14 @@ class Main( viewtype ):
             try:
                 OK = False
                 listitems = self._getSeasons(unquote_plus(self.args.show).replace( " ", "+" ))
-
+            
                 if listitems:
                     from operator import itemgetter
                     listitems = self.natural_sort(listitems, False)
-
                     OK = self._add_directory_items( listitems )
                 self._set_content( OK, "episodes", False )
             except:
                 print_exc()
-
         elif self.args.season:
             url = unquote_plus(self.args.season).replace( " ", "+" )
             season = url[url.rfind(',') + 1:]
@@ -335,7 +337,7 @@ class Main( viewtype ):
                     xbmc.executebuiltin( 'Action(ParentDir)' )
                     xbmc.sleep( 1000 )
                 xbmc.executebuiltin( 'Container.Refresh' )    
-
+            
     def _addChannel(self, listitems, i, url):
         OK = False                
         try:
@@ -343,7 +345,8 @@ class Main( viewtype ):
             episodeUrl = i['link']['uri']
 
             uri = sys.argv[ 0 ]
-            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'], 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'])
+            #item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'], 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'], 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
             url = url %( uri, episodeUrl  )
             
             infoLabels = {
@@ -368,7 +371,7 @@ class Main( viewtype ):
             listitem.setInfo( "Video", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg') #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/channels/' + ep['largeLogo'])
             
             if '?live=' in url:
@@ -387,12 +390,12 @@ class Main( viewtype ):
             label = LANGUAGE(30003) #'-- En Direct / Live TV --'
             episodeUrl = i['orderURI'] 
             uri = sys.argv[ 0 ]
-            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
             url = url %( uri, episodeUrl  )
             
             listitem = xbmcgui.ListItem( *item )
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             
             self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False, True )
@@ -401,6 +404,7 @@ class Main( viewtype ):
             print_exc()
             
     def _addEpisodesToSeason(self, data, season):
+        addon_log("-- Adding Episodes to Season")
         OK = False
         listitems = self._getEpisodes(data, season)
 
@@ -409,7 +413,9 @@ class Main( viewtype ):
             OK = self._add_directory_items( listitems )
         self._set_content( OK, "episodes", False )
     
+    
     def _addEpisode(self, ep, listitems):
+        addon_log("-- Adding Episode")
         label = ep['title']
         if not 'orderURI' in ep:
             return
@@ -459,8 +465,10 @@ class Main( viewtype ):
             print_exc()
 
     def _addSeasonsToShow(self, i, listitems, title=False):
+        addon_log("-- Adding Seasons to Show")
         seasonNo = i['seasonNo'] if 'seasonNo' in i else 0
         label = i['title'] + " - " + (LANGUAGE(30018) + " " + str(seasonNo)) if i['objectType'] == "SEASON" else i['title'] 
+
         if title and not i['title'] in label: label = '%s - %s' % (i['title'], label)
         seasonUrl = i['link']['uri'] + ',' + str(seasonNo)
 
@@ -470,7 +478,7 @@ class Main( viewtype ):
             thumb = 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/player/' + i['image']
             item = ( label,     '',  thumb)
             url = '%s?season="%s"' %( uri, seasonUrl )
-
+            
             listitem = xbmcgui.ListItem( *item )
             description = ''
             if 'description' in i: description = i['description']
@@ -514,26 +522,29 @@ class Main( viewtype ):
         except:
             print_exc()
     
-    def _addChannelToGalaxie(self, channel, listitems, fanart, url=None):
+    def _addChannelToStingray(self, channel, listitems, fanart, url=None):
+        addon_log("-- Adding Channel to Stingray")
         label = channel['name']
         OK = False
         try:
             channelUrl = url or channel['orderURI']
             uri = sys.argv[ 0 ]
-            item = ( label, '' , 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + channel['image'])
+            item = ( label, '' , 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'])
             url = '%s?live="%s"' %( uri, channelUrl  )
             
             infoLabels = {
-                "title":       label
+                "title":       label,
+                "artist":      label,
+                "album":       label
             }
             
             listitem = xbmcgui.ListItem( *item )
-            listitem.setInfo( "Video", infoLabels )
+            listitem.setInfo( "Music", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + channel['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'] )
             listitem.setProperty( "fanart_image", fanart)
-            self._add_context_menu( label, channelUrl, 'galaxie', listitem, False, True )
+            self._add_context_menu( label, channelUrl, 'stingray', listitem, False, True )
             listitems.append( ( url, listitem, False ) )
         except:
             print_exc()
@@ -541,6 +552,7 @@ class Main( viewtype ):
     
     
     def _addShowToChannel(self, season, listitems, fanart, url=None):
+        addon_log("-- Adding Show to Channel")
         label = season['label'] if 'label' in season else season['name']
         if label=='Home':
             return
@@ -579,7 +591,7 @@ class Main( viewtype ):
             listitem.setInfo( "Video", infoLabels )'''
 
             listitem.setProperty( 'playLabel', label )
-            #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/logos/' + i['image'] )
+            #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             self._add_context_menu( label, showUrl, 'show', listitem, False, True )
             listitems.append( ( url, listitem, True ) )
@@ -646,8 +658,8 @@ class Main( viewtype ):
         if (len(sections) == 1):
             # play show directly
             self._playEpisode(json.loads(data)['body']['main']['provider']['orderURI'])
-            return
-
+            return           
+        
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         data = getRequest(url,urllib.urlencode(values),headers)
@@ -663,7 +675,6 @@ class Main( viewtype ):
                         # found specified season, return json
                         return i
                 else: self._addSeasonsToShow(i,listitems)
-
         i = json.loads(data)['body']['main']
         if type(i) is list:
             # sub category, loop through shows / episodes
@@ -678,11 +689,10 @@ class Main( viewtype ):
             return self._getEpisodes(data, str(i['seasonNo']))
 
         if len(listitems) == 0 and not 'seasonNo' in i:
-
             # no season information, play show directly
             self._playEpisode(i[0]['orderURI'] if type(i) is list else i['orderURI'])
             return
-
+            
         return listitems
 
     # Returns json of Season from a specific Show's URL
@@ -715,7 +725,7 @@ class Main( viewtype ):
         i = json.loads(data)['body']['main']['provider']
         
         livelist = []
-        if i['name'] == 'Galaxie':
+        if 'Stingray Mus' in i['name']:
             shows = i
         else:
             # Add LiveTV to top of show list
@@ -733,10 +743,10 @@ class Main( viewtype ):
         
         return shows, fanart, livelist
 
-    def _getGalaxie(self, url, label):
+    def _getStingray(self, url, label):
         self._checkCookies()
 
-        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Galaxie' #+unquote_plus(url).replace( " ", "+" )
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' #+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -758,7 +768,7 @@ class Main( viewtype ):
         values = {}
         data = getRequest(url,urllib.urlencode(values),headers)
         data = self._getChannelShowsJSON(data) or data
-        
+
         shows = json.loads(data)['body']['main']
         if not 'submenus' in shows:
             shows = shows['provider']
@@ -802,6 +812,14 @@ class Main( viewtype ):
 
         return listitems    
 
+    def _getEpisodesAlt(self, data):
+        listitems = []
+        i = json.loads(data)['body']
+        for ep in i['main']:
+            self._addEpisode(ep, listitems)
+
+        return listitems   
+        
     def _getChannelShowsJSON(self, data):
         sections = json.loads(data)['body']['main']['sections']
         onDemand = False
@@ -936,6 +954,7 @@ class Main( viewtype ):
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
 
+                
     def _add_directory_favourites( self ):
         OK = False
         listitems = []
@@ -946,7 +965,7 @@ class Main( viewtype ):
             if isinstance(xmlFav, unicode):
                 xmlFav = xmlFav.encode('utf-8')
             favourites = parseString( xmlFav).getElementsByTagName( "favourite" )
-
+            
             for favourite in favourites:
                 try:
                     label = favourite.getAttribute( "label" )
@@ -964,17 +983,15 @@ class Main( viewtype ):
                             i['name'] = label.replace(' - Live', " " + LANGUAGE(30003))
                             i['link']['uri'] = url 
                             self._addChannel(listitems, i, '%s?live="%s"')
-
-                    elif category == 'galaxie':
-                        i = self._getGalaxie(url, label)
+                    
+                    elif category == 'stingray':
+                        i = self._getStingray(url, label)
                         if i:
-
-                            self._addChannelToGalaxie(i, listitems, "", url)
-
+                            self._addChannelToStingray(i, listitems, "", url)
+                            
                     elif category == 'show':
                         i = self._getShow(url, label)
                         if i:
-
                             self._addShowToChannel(i,listitems, "", url)
                             
                     elif category == 'season':
@@ -992,6 +1009,7 @@ class Main( viewtype ):
                     remove = remove.yesno(ADDON_NAME, question)
                     if remove:
                         self._addToFavourites(label, category, url, True)
+                        
         except:
             print_exc()
 
@@ -1000,9 +1018,9 @@ class Main( viewtype ):
             OK = self._add_directory_items( listitems )   
         else:
             xbmc.executebuiltin("XBMC.Notification("+ADDON_NAME+", "+LANGUAGE(30020)+",10000,"+ICON+")")
-
+            
         self._set_content( OK, "episodes", False )  
-
+                
     def _add_directory_root( self ):
         self._checkCookies()
 
@@ -1025,6 +1043,7 @@ class Main( viewtype ):
                 listitem = xbmcgui.ListItem( *item )
                 listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg')
                 url = '%s?favoris="root"' %uri 
+                listitem.addContextMenuItems( [( LANGXBMC(184), "Container.Refresh")], False )
                 listitems.append(( url, listitem, True ))
             
             OK = False
@@ -1050,9 +1069,10 @@ class Main( viewtype ):
                 # all strings must be unicode but encoded, if necessary, as utf-8 to be passed on to urlencode!!
                 if isinstance(label, unicode):
                     labelUri = label.encode('utf-8')
+                addon_log("--- " + labelUri)
                 f = { 'label' : labelUri, 'category' : category, 'url' : url}
                 uri = '%s?addtofavourites=%s%s%s' % ( sys.argv[ 0 ], "%22", urllib.urlencode(f), "%22" ) #urlencode(f) )
-
+                
                 if self.args.favoris == "root":
                     c_items += [ ( LANGUAGE(30005), "RunPlugin(%s)" % uri.replace( "addto", "removefrom" ) ) ]
                 else:
@@ -1070,7 +1090,7 @@ class Main( viewtype ):
                 c_items += [ ( LANGXBMC( i_label ), "RunPlugin(%s)" % uri ) ]
 
             c_items += [ ( LANGXBMC(184), "Container.Refresh") ]
-
+                
             self._add_context_menu_items( c_items, listitem )
         except:
             print_exc()
@@ -1102,7 +1122,7 @@ class Main( viewtype ):
 class Info:
     def __init__( self, *args, **kwargs ):
         # update dict with our formatted argv
-        #addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
+        addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
         try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
         except: print_exc()
         # update dict with custom kwargs
