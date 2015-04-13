@@ -51,12 +51,13 @@ from urlparse import urlparse
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
 ADDON_VERSION = "1.8.3"
-ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
+ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
+ADDON_PATH = xbmc.translatePath( ADDON.getAddonInfo( "path" ).decode('utf-8') )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
 COOKIE_JAR = cookielib.LWPCookieJar(COOKIE)
 
-ICON = os.path.join(xbmc.translatePath(ADDON.getAddonInfo('path')), 'icon.png')
+ICON = os.path.join(ADDON_PATH, 'icon.png')
 FAVOURITES_XML = os.path.join( ADDON_CACHE, "favourites.xml" )
 
 USERNAME = ADDON.getSetting( "username" )
@@ -205,7 +206,7 @@ class Main( viewtype ):
 
         if not xbmcgui.Window(10000).getProperty('plugin.video.illicoweb_running') == 'True':
             addon_log('** Service not running **')
-            xbmc.executescript(os.path.join(xbmc.translatePath(ADDON.getAddonInfo('path')), 'service.py'))
+            xbmc.executescript(os.path.join(ADDON_PATH, 'service.py'))
         
         if self.args.isempty():
             login()
