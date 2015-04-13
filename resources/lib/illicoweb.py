@@ -86,6 +86,7 @@ def login():
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0'}
         login = getRequest(url,None,headers)
 
+
         # now authenticate
         url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr&password='+PASSWORD+'&userId='+USERNAME
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -317,6 +318,8 @@ class Main( viewtype ):
             favourites = open( FAVOURITES_XML, "r" ).read()
         else:
             favourites = '<favourites>\n</favourites>\n'
+        if isinstance(favourites, str):
+            favourites = favourites.decode('utf-8')
         
         label = label.replace("/plus/","+")
         
@@ -330,6 +333,8 @@ class Main( viewtype ):
             else:
                 favourites = favourites.replace( '</favourites>', '  %s\n</favourites>' % (favourite))
                 refresh = False
+            if isinstance(favourites, unicode):
+                favourites = favourites.encode('utf-8')
             file( FAVOURITES_XML, "w" ).write( favourites )
             if refresh:
                 if favourites == '<favourites>\n</favourites>\n':
