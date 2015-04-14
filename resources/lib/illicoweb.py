@@ -87,6 +87,7 @@ def login():
         login = getRequest(url,None,headers)
 
 
+
         # now authenticate
         url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr&password='+PASSWORD+'&userId='+USERNAME
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -317,7 +318,7 @@ class Main( viewtype ):
         if os.path.exists( FAVOURITES_XML ):
             favourites = open( FAVOURITES_XML, "r" ).read()
         else:
-            favourites = '<favourites>\n</favourites>\n'
+            favourites = u'<favourites>\n</favourites>\n'
         if isinstance(favourites, str):
             favourites = favourites.decode('utf-8')
         
