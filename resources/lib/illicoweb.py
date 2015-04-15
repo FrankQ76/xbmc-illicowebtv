@@ -564,7 +564,7 @@ class Main( viewtype ):
 
         if (len(sections) == 1):
             # play show directly
-            self._playEpisode(json.loads(data)['body']['main']['provider']['orderURI'])
+            self._playEpisode(json.loads(data)['body']['main']['provider']['orderURI'], True)
             return           
         
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
@@ -597,7 +597,7 @@ class Main( viewtype ):
 
         if len(listitems) == 0 and not 'seasonNo' in i:
             # no season information, play show directly
-            self._playEpisode(i[0]['orderURI'] if type(i) is list else i['orderURI'])
+            self._playEpisode(i[0]['orderURI'] if type(i) is list else i['orderURI'], True)
             return
             
         return listitems
@@ -776,11 +776,11 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         options = {'live': '1'}
 
-        if not (self._play(data, pid, options)):
+        if not (self._play(data, pid, options), True):
             addon_log("episode error")
     
     
-    def _playEpisode(self, pid):
+    def _playEpisode(self, pid, direct=False):
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -790,7 +790,7 @@ class Main( viewtype ):
         if not (self._play(data, pid)): #unquote_plus(pid).replace( " ", "+" ))):
             addon_log("episode error")
     
-    def _play(self, data, pid, options={}):
+    def _play(self, data, pid, options={}, direct=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
         encrypted = info['body']['main']['mediaEncryption']
@@ -830,7 +830,11 @@ class Main( viewtype ):
         item.setProperty('IsPlayable', 'true')
         item.setPath(final_url)
         
-        xbmcplugin.setResolvedUrl(int( sys.argv[ 1 ] ), True, item)
+        if direct:
+            player = xbmc.Player( xbmc.PLAYER_CORE_DVDPLAYER )
+            player.play(final_url, item)
+        else:
+            xbmcplugin.setResolvedUrl(int( sys.argv[ 1 ] ), True, item)
 
         return True
 
