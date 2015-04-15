@@ -166,9 +166,6 @@ class Main( viewtype ):
         viewtype.__init__( self )
         self.args = Info()
 
-        if not xbmcgui.Window(10000).getProperty('plugin.video.illicoweb_running') == 'True':
-            addon_log('** Service not running **')
-            xbmc.executescript(os.path.join(ADDON_PATH, 'service.py'))
         
         if self.args.isempty():
             login()
