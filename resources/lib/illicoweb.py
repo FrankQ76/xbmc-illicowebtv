@@ -82,11 +82,19 @@ def login():
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
 
+        # Set CookieProcessor
+        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
+        urllib2.install_opener(opener)
         # Get the cookie first
         url = 'http://illicoweb.videotron.com/accueil'
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0'}
-        login = getRequest(url,None,headers)
 
+        # Make request and save session cookies
+        req = urllib2.Request(url,None,headers)
+        response = urllib2.urlopen(req)
+        data = response.read()
+        COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
+        response.close()
 
 
         # now authenticate
@@ -118,18 +126,21 @@ def getRequest(url, data=None, headers=None):
     
     if data == None:
         addon_log('No response from server')
-        xbmc.executebuiltin("XBMC.Notification("+LANGUAGE(30001)+","+url+",10000,"+ICON+")")
         
     return data
         
 def getRequestedUrl(url, data=None, headers=None):
     if not xbmcvfs.exists(COOKIE):
-        addon_log('Creating COOKIE!')
-        COOKIE_JAR.save()
+        login()    
+
     if headers is None:
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'http://illicoweb.videotron.com'}
-    COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
+    try:
+        COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
+    except:
+        login()
+
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
     urllib2.install_opener(opener)
     try:
