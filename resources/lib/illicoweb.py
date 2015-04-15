@@ -49,6 +49,9 @@ except ImportError:
     from cgi import parse_qs
 from urlparse import urlparse
 
+from DataManager import DataManager
+dataManager = DataManager()
+
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
 ADDON_VERSION = "1.8.3"
@@ -131,7 +134,7 @@ def getRequest(url, data=None, headers=None):
         
 def getRequestedUrl(url, data=None, headers=None):
     if not xbmcvfs.exists(COOKIE):
-        login()    
+        login()
 
     if headers is None:
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -516,12 +519,12 @@ class Main( viewtype ):
 
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/channels/<channelName>/<showID>/<showName>
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +url
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data = dataManager.GetContent(url)
 
-        sections = json.loads(data)['body']['main']['sections']
+        sections = data['body']['main']['sections']
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
-        return getRequest(url,urllib.urlencode(values),headers)        
+        return dataManager.GetContent(url)
 
         
     # Returns json of Channel labeled <label>
@@ -566,12 +569,12 @@ class Main( viewtype ):
         
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data = dataManager.GetContent(url)
         
         listitems = []
-        seasons = json.loads(data)['body']
+        seasons = data['body']
         if 'SeasonHierarchy' in seasons:
-            seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
+            seasons = data['body']['SeasonHierarchy']['seasons']
             for i in seasons:
                 # [body][SeasonHierarchy][seasons] seasons
                 if seasonNo > 0:
@@ -579,7 +582,7 @@ class Main( viewtype ):
                         # found specified season, return json
                         return i
                 else: self._addSeasonsToShow(i,listitems)
-        i = json.loads(data)['body']['main']
+        i = data['body']['main']
         if type(i) is list:
             # sub category, loop through shows / episodes
             for y in i:
@@ -609,8 +612,7 @@ class Main( viewtype ):
 
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
-        return getRequest(url,urllib.urlencode(values),headers)        
-
+        return dataManager.GetContent(url)
         
 
     def _getShows(self, url):
@@ -643,7 +645,7 @@ class Main( viewtype ):
             if data is None:
                 return "", fanart, livelist
             
-            shows = json.loads(data)['body']['main']['submenus']
+            shows = data['body']['main']['submenus']
         
         return shows, fanart, livelist
 
@@ -673,7 +675,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         data = self._getChannelShowsJSON(data) or data
 
-        shows = json.loads(data)['body']['main']
+        shows = data['body']['main']
         if not 'submenus' in shows:
             shows = shows['provider']
             if shows['name'] == label:
@@ -692,21 +694,20 @@ class Main( viewtype ):
                         return i
     
     def _getEpisodes(self, data, season, title=None):
-        seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
+        seasons = data['body']['SeasonHierarchy']['seasons']
         listitems = []
 
         # [body][SeasonHierarchy][seasons] seasons
         for i in seasons:
             if(str(i['seasonNo']) == season):
-                seasonJSON = self._getSeasonJSON(str(i['id']))
-                season = json.loads(seasonJSON)
+                season = self._getSeasonJSON(str(i['id']))
                 for ep in season['body']['main']['episodes']:
                     if title:
                         if title == ep['title']:
                             self._addEpisode(ep, listitems)
                     else: self._addEpisode(ep, listitems)
         # [body][main] seasons
-        i = json.loads(data)['body']['main']
+        i = data['body']['main']
         if(str(i['seasonNo']) == season):
             for ep in i['episodes']:
                 if title:
@@ -739,7 +740,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
             'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        return getRequest(url,urllib.urlencode(values),headers)
+        return dataManager.GetContent(url)
     
     def _getChannelFanartImg(self, data):
         sections = json.loads(data)['body']['main']['sections']
@@ -1039,3 +1040,5 @@ class Info:
 
 if ( __name__ == "__main__" ):
     Main()
+
+dataManager.canRefreshNow = True
