@@ -156,46 +156,6 @@ def getRequestedUrl(url, data=None, headers=None):
                 exit(0)
         return None
 
-def getWatched():
-    watched = {}
-    try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
-    except:
-        print_exc()
-    return watched
-
-def setWatched( strwatched, remove=False, refresh=True ):
-    if not strwatched: return
-    
-    # all strings must be unicode!!
-    if isinstance(strwatched, str):
-        strwatched = strwatched.decode('utf-8')
-
-    try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
-
-        url, label = strwatched.split( "*" )
-
-        watched[ url ] = watched.get( url ) or []
-        # add to watched
-        if label not in watched[ url ]:
-            watched[ url ].append( label )
-
-        # remove from watched
-        if remove and label in watched[ url ]:
-            del watched[ url ][ watched[ url ].index( label ) ]
-
-        file( watched_db, "w" ).write( "%r" % watched )
-    except:
-        print_exc()
-    if refresh:
-        addon_log("Refreshing directory after setting watched status")
-        xbmc.executebuiltin( 'Container.Refresh' )
- 
 if re.search( '(GetCarrousel|"carrousel")', sys.argv[ 2 ] ):
     from GuiView import GuiView as viewtype
 else:
@@ -205,7 +165,6 @@ class Main( viewtype ):
     def __init__( self ):
         viewtype.__init__( self )
         self.args = Info()
-        self.watched = getWatched()
 
         if not xbmcgui.Window(10000).getProperty('plugin.video.illicoweb_running') == 'True':
             addon_log('** Service not running **')
@@ -214,32 +173,6 @@ class Main( viewtype ):
         if self.args.isempty():
             login()
             self._add_directory_root()
-
-        elif self.args.setwatched or self.args.setunwatched:
-            strwatched = self.args.setwatched or self.args.setunwatched
-            if self.args.all:
-                url, label = strwatched.split( "*" )
-                seasonNo = url[url.rfind(',')+1:]
-                url = '/' + url[:url.rfind(',')]
-                data = self._getShowJSON(url)
-                
-                seasons = json.loads(data)['body']['SeasonHierarchy']['seasons']
-
-                # [body][SeasonHierarchy][seasons] seasons
-                for i in seasons:
-                    #addon_log(i['seasonNo'] + ' ==? ' + seasonNo)
-                    if(str(i['seasonNo']) == seasonNo):
-                        for ep in i['episodes']:
-                            setWatched( ep['orderURI'] + '*' + ep['title'], bool( self.args.setunwatched ), False)
-
-                # [body][main] seasons
-                i = json.loads(data)['body']['main']
-                if(str(i['seasonNo']) == seasonNo):
-                    for ep in i['episodes']:
-                        setWatched( ep['orderURI'] + '*' + ep['title'], bool( self.args.setunwatched ), False)
-                
-                #xbmc.executebuiltin( 'Container.Refresh' )
-            else: setWatched( strwatched, bool( self.args.setunwatched ) )
 
         elif self.args.addtofavourites or self.args.removefromfavourites:
             #turn dict back into url, decode it and format it in xml
@@ -385,7 +318,7 @@ class Main( viewtype ):
             if '?live=' in url:
                 category = 'live'
             else: category = 'channel'
-            self._add_context_menu( label, episodeUrl, category, listitem, False, True )
+            self._add_context_menu( label, episodeUrl, category, listitem, False )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -406,7 +339,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             
-            self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False, True )
+            self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -452,10 +385,6 @@ class Main( viewtype ):
                 #"director":    episode[ "PeopleDirector" ] or "",
             }
             
-            watched = label in self.watched.get(seasonUrl, [] )
-            overlay = ( xbmcgui.ICON_OVERLAY_NONE, xbmcgui.ICON_OVERLAY_WATCHED )[ watched ]
-            infoLabels.update( { "playCount": ( 0, 1 )[ watched ], "overlay": overlay } )
-
             listitem = xbmcgui.ListItem( *item )
             listitem.setInfo( "Video", infoLabels )
             
@@ -465,11 +394,7 @@ class Main( viewtype ):
             
             listitem.setProperty( "IsPlayable", "true" )
             
-            #set property for player set watched
-            strwatched = "%s*%s" % ( seasonUrl, label )
-            listitem.setProperty( "strwatched", strwatched )
-            
-            self._add_context_menu(  label, unquote_plus(seasonUrl.replace( " ", "+" ) ), 'episode', listitem, watched )
+            self._add_context_menu(  label, unquote_plus(seasonUrl.replace( " ", "+" ) ), 'episode', listitem )
             listitems.append( ( url, listitem, False ) )
         except:
             print_exc()
@@ -504,22 +429,6 @@ class Main( viewtype ):
                 "plot":        description,
                 #"premiered":   emission.get( "premiered" ) or "",
                 }
-
-            watched = 0
-            #for episode in i['episodes']:
-            #    if episode['title'] in self.watched.get(episode['orderURI'], [] ):
-            #        watched += 1
-            NombreEpisodes = int( i['size'] if 'size' in i else "1")
-            if NombreEpisodes == 0: NombreEpisodes = 99
-            unwatched = NombreEpisodes - watched
-            addon_log ('Total: %s - Watched: %s = Unwatched: %s' % (str(NombreEpisodes), str(watched),str(unwatched)))
-
-            listitem.setProperty( "WatchedEpisodes", str( watched ) )
-            listitem.setProperty( "UnWatchedEpisodes", str( unwatched ) )
-
-            playCount = ( 0, 1 )[ not unwatched ]
-            overlay = ( xbmcgui.ICON_OVERLAY_NONE, xbmcgui.ICON_OVERLAY_WATCHED )[ playCount ]
-            infoLabels.update( { "playCount": playCount, "overlay": overlay } )
             
             listitem.setInfo( "Video", infoLabels )
 
@@ -527,7 +436,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/thumb/' + i['image'] )
             listitem.setProperty( "fanart_image", xbmc.getInfoLabel( "ListItem.Property(fanart_image)" )) #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/thumb/' + i['image'])
 
-            self._add_context_menu( i['title'], seasonUrl, 'season', listitem, not unwatched )
+            self._add_context_menu( i['title'], seasonUrl, 'season', listitem )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -557,7 +466,7 @@ class Main( viewtype ):
 
             listitem.setProperty( "IsPlayable", "true" )
             
-            self._add_context_menu( label, channelUrl, 'stingray', listitem, False, True )
+            self._add_context_menu( label, channelUrl, 'stingray', listitem, False )
             listitems.append( ( url, listitem, False ) )
         except:
             print_exc()
@@ -577,36 +486,10 @@ class Main( viewtype ):
             url = '%s?show="%s"' %( uri, showUrl  )
             listitem = xbmcgui.ListItem( *item )
 
-            '''infoLabels = {
-                "tvshowtitle": label,
-                "title":       label
-                #"genre":       genre,
-                #"year":        int( year.split()[ 0 ] ),
-                #"tagline":     ( STRING_FOR_ALL, "" )[ bool( GeoTargeting ) ],
-                #"duration":    emission.get( "CategorieDuree" ) or "",
-                #"episode":     NombreEpisodes,
-                #"season":      -1,
-                #"plot":        emission.get( "Description" ) or "",
-                #"premiered":   emission.get( "premiered" ) or "",
-                }
-            
-            watched = len( self.watched.get( showUrl ) or [] )
-            NombreEpisodes = int( season['size'] or "1" )
-            unwatched = NombreEpisodes - watched
-
-            listitem.setProperty( "WatchedEpisodes", str( watched ) )
-            listitem.setProperty( "UnWatchedEpisodes", str( unwatched ) )
-
-            playCount = ( 0, 1 )[ not unwatched ]
-            overlay = ( xbmcgui.ICON_OVERLAY_NONE, xbmcgui.ICON_OVERLAY_WATCHED )[ playCount ]
-            infoLabels.update( { "playCount": playCount, "overlay": overlay } )
-            
-            listitem.setInfo( "Video", infoLabels )'''
-
             listitem.setProperty( 'playLabel', label )
             #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
-            self._add_context_menu( label, showUrl, 'show', listitem, False, True )
+            self._add_context_menu( label, showUrl, 'show', listitem, False )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -922,7 +805,7 @@ class Main( viewtype ):
         win = xbmcgui.Window(10000)
         win.setProperty('illico.playing.title', xbmc.getInfoLabel( "ListItem.Property(playLabel)" ))
         win.setProperty('illico.playing.pid', unquote_plus(pid).replace( " ", "+" ))
-        win.setProperty('illico.playing.watched', xbmc.getInfoLabel( "ListItem.Property(strwatched)" ))
+
         
         if 'live' in options.keys() and options['live']:
             live = ' live=1'
@@ -1072,7 +955,7 @@ class Main( viewtype ):
     '''
     ' Section de gestion des menus
     '''
-    def _add_context_menu( self, label, url, category, listitem, watched=False, hidewatched=False ):
+    def _add_context_menu( self, label, url, category, listitem ):
         try:
             c_items = [] #[ ( LANGXBMC( 20351 ), "Action(Info)" ) ]
     
@@ -1089,18 +972,6 @@ class Main( viewtype ):
                     c_items += [ ( LANGUAGE(30005), "RunPlugin(%s)" % uri.replace( "addto", "removefrom" ) ) ]
                 else:
                     c_items += [ ( LANGUAGE(30006), "RunPlugin(%s)" % uri ) ]
-                
-            if not hidewatched:
-                if not watched:
-                    i_label, action = 16103, "setwatched"
-                else:
-                    i_label, action = 16104, "setunwatched"
-                if category == 'season':
-                    all = 'True'
-                else: all = 'False'
-                uri = '%s?%s="%s*%s"&all=%s' % ( sys.argv[ 0 ], action, url, label, all )
-                c_items += [ ( LANGXBMC( i_label ), "RunPlugin(%s)" % uri ) ]
-
             c_items += [ ( LANGXBMC(184), "Container.Refresh") ]
                 
             self._add_context_menu_items( c_items, listitem )
