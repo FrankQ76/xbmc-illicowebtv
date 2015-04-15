@@ -139,10 +139,8 @@ def getRequestedUrl(url, data=None, headers=None):
     if headers is None:
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'http://illicoweb.videotron.com'}
-    try:
-        COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
-    except:
-        login()
+
+    self._loadCookies()
 
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
     urllib2.install_opener(opener)
@@ -288,6 +286,7 @@ class Main( viewtype ):
                     except: pass
                     xbmc.executebuiltin( 'Action(ParentDir)' )
                     xbmc.sleep( 1000 )
+                WINDOW.setProperty("force_data_reload", "true")
                 xbmc.executebuiltin( 'Container.Refresh' )    
             
     def _addChannel(self, listitems, i, url):
@@ -838,11 +837,15 @@ class Main( viewtype ):
 
         return True
 
-        
-               
+    def _loadCookies(self):
+        try:
+            COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
+        except:
+            login()
+
     def _checkCookies(self):
         # Check if cookies have expired.
-        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
+        self._loadCookies()
         cookies = {}
         addon_log('These are the cookies we have in the cookie file:')
         for i in COOKIE_JAR:
@@ -858,10 +861,6 @@ class Main( viewtype ):
             xbmcgui.Dialog().ok(ADDON_NAME, '%s\n%s' % (LANGUAGE(30004),LANGUAGE(30041)))
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
-
-        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
-        cookies = {}
-
                 
     def _add_directory_favourites( self ):
         OK = False
