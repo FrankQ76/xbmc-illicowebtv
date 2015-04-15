@@ -24,6 +24,7 @@ import urllib2
 import xbmc
 import xbmcgui
 import xbmcaddon
+import xbmcplugin
 import xbmcvfs
 import json
 
@@ -462,6 +463,8 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/player/' + ep['image'] )
             listitem.setProperty( "fanart_image", xbmc.getInfoLabel( "ListItem.Property(fanart_image)" )) #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/thumb/' + ep['image'])
             
+            listitem.setProperty( "IsPlayable", "true" )
+            
             #set property for player set watched
             strwatched = "%s*%s" % ( seasonUrl, label )
             listitem.setProperty( "strwatched", strwatched )
@@ -551,6 +554,9 @@ class Main( viewtype ):
             listitem.setProperty( 'playLabel', label )
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'] )
             listitem.setProperty( "fanart_image", fanart)
+
+            listitem.setProperty( "IsPlayable", "true" )
+            
             self._add_context_menu( label, channelUrl, 'stingray', listitem, False, True )
             listitems.append( ( url, listitem, False ) )
         except:
@@ -932,9 +938,8 @@ class Main( viewtype ):
         item.setProperty('IsPlayable', 'true')
         item.setPath(final_url)
         
-        player = xbmc.Player( xbmc.PLAYER_CORE_DVDPLAYER )
-        player.play(final_url, item)
-        
+        xbmcplugin.setResolvedUrl(int( sys.argv[ 1 ] ), True, item)
+
         return True
 
         
