@@ -329,7 +329,7 @@ class Main( viewtype ):
             if '?live=' in url:
                 category = 'live'
             else: category = 'channel'
-            self._add_context_menu( label, episodeUrl, category, listitem, False )
+            self._add_context_menu( label, episodeUrl, category, listitem )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -350,7 +350,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             
-            self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False )
+            self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -477,7 +477,7 @@ class Main( viewtype ):
 
             listitem.setProperty( "IsPlayable", "true" )
             
-            self._add_context_menu( label, channelUrl, 'stingray', listitem, False )
+            self._add_context_menu( label, channelUrl, 'stingray', listitem )
             listitems.append( ( url, listitem, False ) )
         except:
             print_exc()
@@ -500,7 +500,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playLabel', label )
             #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
-            self._add_context_menu( label, showUrl, 'show', listitem, False )
+            self._add_context_menu( label, showUrl, 'show', listitem )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
