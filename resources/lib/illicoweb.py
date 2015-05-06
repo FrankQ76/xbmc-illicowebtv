@@ -821,9 +821,11 @@ class Main( viewtype ):
         item.setPath(final_url)
         
         if direct:
+            addon_log('Direct playback with DVDPlayer')
             player = xbmc.Player( xbmc.PLAYER_CORE_DVDPLAYER )
             player.play(final_url, item)
         else:
+            addon_log('Indirect playback with setResolvedUrl')
             xbmcplugin.setResolvedUrl(int( sys.argv[ 1 ] ), True, item)
 
         return True
