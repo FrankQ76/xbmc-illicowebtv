@@ -476,8 +476,6 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'] )
             listitem.setProperty( "fanart_image", fanart)
 
-            listitem.setProperty( "IsPlayable", "true" )
-            
             self._add_context_menu( label, channelUrl, 'stingray', listitem )
             listitems.append( ( url, listitem, False ) )
         except:
@@ -769,7 +767,7 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         options = {'live': '1'}
 
-        if not (self._play(data, pid, options), True):
+        if not (self._play(data, pid, options, True), True):
             addon_log("episode error")
     
     
@@ -780,7 +778,7 @@ class Main( viewtype ):
         values = {}
         data = getRequest(url,urllib.urlencode(values),headers)
 
-        if not (self._play(data, pid)): #unquote_plus(pid).replace( " ", "+" ))):
+        if not (self._play(data, pid, {}, direct)):
             addon_log("episode error")
     
     def _play(self, data, pid, options={}, direct=False):
@@ -820,7 +818,6 @@ class Main( viewtype ):
         addon_log('Attempting to play url: %s' % final_url)
     
         item = xbmcgui.ListItem(xbmc.getInfoLabel( "ListItem.Property(playLabel)" ), '', xbmc.getInfoLabel( "ListItem.Property(playThumb)" ), xbmc.getInfoLabel( "ListItem.Property(playThumb)" ))
-        item.setProperty('IsPlayable', 'true')
         item.setPath(final_url)
         
         if direct:
