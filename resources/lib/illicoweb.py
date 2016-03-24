@@ -77,6 +77,28 @@ def addon_log(string):
             string = string.encode('utf-8')
         xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string))
 
+def sessionCheck():
+    addon_log('SessionCheck: In progress...')
+    # Set CookieProcessor
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
+    urllib2.install_opener(opener)
+    # Get the cookie first
+    url = 'https://illicoweb.videotron.com/illicoservice/sessioncheck'
+    headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0'}
+    req = urllib2.Request(url,None,headers)
+    response = urllib2.urlopen(req)
+    data = response.read()
+    
+    status = json.loads(data)['head']['userInfo']['clubIllicoStatus']
+
+    if status is 'NOT_CONNECTED':
+        addon_log("SessionCheck: NOT CONNECTED.") 
+        return False
+
+
+    addon_log("SessionCheck: Logged in.")
+    return True
+    
 def login():
         addon_log('Login to get cookies!')
 
@@ -85,6 +107,8 @@ def login():
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
 
+        if (sessionCheck()):
+            return True
         # Set CookieProcessor
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
         urllib2.install_opener(opener)
@@ -113,8 +137,11 @@ def login():
 			 'password' : PASSWORD
         }
         req = urllib2.Request(url,urllib.urlencode(values),headers)
-        response = urllib2.urlopen(req, json.dumps(login))
-        data = response.read()
+        try:
+            response = urllib2.urlopen(req, json.dumps(login))
+            data = response.read()
+        except:
+            addon_log('Failed to login...')
 
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
@@ -130,7 +157,7 @@ def login():
         
 def getRequest(url, data=None, headers=None):
     data, result = getRequestedUrl(url, data, headers)
-    if result == 302:
+    if (result == 302) or (result == 403):
         addon_log("Unauthenticated.  Logging in.")
         COOKIE_JAR.clear()
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
@@ -141,7 +168,7 @@ def getRequest(url, data=None, headers=None):
     if data == None:
         addon_log('No response from server')
         
-    return data
+    return (data, result)
         
 def getRequestedUrl(url, data=None, headers=None):
     if not xbmcvfs.exists(COOKIE):
@@ -255,7 +282,7 @@ class Main( viewtype ):
             self._playLive(unquote_plus(self.args.live).replace( " ", "+" ))
 
         elif self.args.episode:
-            self._checkCookies()
+            #self._checkCookies()
             self._playEpisode(unquote_plus(self.args.episode).replace( " ", "+" ))
 
         elif self.args.channel:
@@ -562,7 +589,7 @@ class Main( viewtype ):
     # --------------------------------------------------------------------------------------------
     
     def _getShowJSON(self, url):
-        self._checkCookies()
+        #self._checkCookies()
 
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -580,7 +607,7 @@ class Main( viewtype ):
         
     # Returns json of Channel labeled <label>
     def _getChannel(self, label):
-        self._checkCookies()
+        #self._checkCookies()
 
         url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
         if xbmc.getLanguage() == "English":
@@ -589,7 +616,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
 
         jsonList = json.loads(data)['body']['main']
 
@@ -601,7 +628,7 @@ class Main( viewtype ):
     # Returns json of Seasons from a specific Show's URL
     # Can return a specific season number json if seasonNo arg is non-0
     def _getSeasons(self, url, seasonNo=0):
-        self._checkCookies()
+        #self._checkCookies()
         
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/ChannelName
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' + url
@@ -610,7 +637,7 @@ class Main( viewtype ):
         values = {}
 
         # get Channel sections to get URL for JSON shows
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
         sections = json.loads(data)['body']['main']['sections']
 
         if (len(sections) == 1):
@@ -655,7 +682,7 @@ class Main( viewtype ):
 
     # Returns json of Season from a specific Show's URL
     def _getSeasonJSON(self, id):
-        self._checkCookies()
+        #self._checkCookies()
 
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -667,13 +694,13 @@ class Main( viewtype ):
         
 
     def _getShows(self, url):
-        self._checkCookies()
+        #self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         addon_log("Getting fanart from URL: " + url)
@@ -701,13 +728,13 @@ class Main( viewtype ):
         return shows, fanart, livelist
 
     def _getStingray(self, url, label):
-        self._checkCookies()
+        #self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' #+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
         #data = self._getChannelShowsJSON(data)
         
         channels = json.loads(data)['body']['main']['provider']['channels']   
@@ -717,13 +744,13 @@ class Main( viewtype ):
                 return i
         
     def _getShow(self, url, label):
-        self._checkCookies()
+        #self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
         data = self._getChannelShowsJSON(data) or data
 
         shows = data['body']['main']
@@ -807,7 +834,7 @@ class Main( viewtype ):
             headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
             values = {}
-            data = getRequest(url,urllib.urlencode(values),headers)
+            data, result = getRequest(url,urllib.urlencode(values),headers)
             img = json.loads(data)['body']['main'][0]
             return 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/' + img['image']    
         except:
@@ -818,17 +845,17 @@ class Main( viewtype ):
     # --------------------------------------------------------------------------------------------
     
     def _playStingray(self, pid):
-        self._checkCookies()
+        #self._checkCookies()
         url = 'https://illicoweb.videotron.com/illicoservice'+pid
         addon_log("Stingray music at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
         options = {'live': '1'}
 
-        if not data is None:
-            if not (self._play(data, pid, options), True, True):
+        if (not data is None) and (result == 200):
+            if not (self._play(data, pid, options, True, True)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -836,17 +863,17 @@ class Main( viewtype ):
             return False
     
     def _playLive(self, pid):
-        self._checkCookies()
+        #self._checkCookies()
         url = 'https://tabdroid2.videotron.com/illicoservice'+pid
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
         options = {'live': '1'}
 
-        if not data is None:
-            if not (self._play(data, pid, options), True):
+        if (not data is None) and (result == 200):
+            if not (self._play(data, pid, options, True, False)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -859,9 +886,9 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
 
-        if not data is None:
+        if (not data is None) and (result == 200):
             if not (self._play(data, pid)): #unquote_plus(pid).replace( " ", "+" ))):
                 addon_log("episode error")
         else:
@@ -869,7 +896,7 @@ class Main( viewtype ):
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
             return False
             
-    def _play(self, data, pid, options={}, direct=False, rtmp=False):
+    def _play(self, data, pid, options={}, direct=False, rtmpStream=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
         encrypted = info['body']['main']['mediaEncryption']
@@ -902,7 +929,7 @@ class Main( viewtype ):
             live = ''
             win.setProperty('illico.playing.live', 'false')
         
-        if rtmp:
+        if rtmpStream:
             final_url = rtmp+playpath+pageurl+swfurl+live
         else:
             final_url = getRequestedM3u8(path)
@@ -1009,7 +1036,7 @@ class Main( viewtype ):
         self._set_content( OK, "episodes", False )  
                 
     def _add_directory_root( self ):
-        self._checkCookies()
+        #self._checkCookies()
 
         url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
         if xbmc.getLanguage() == "English":
@@ -1018,7 +1045,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.urlencode(values),headers)
 
         try:
             jsonList = json.loads(data)['body']['main']
