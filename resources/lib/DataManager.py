@@ -75,30 +75,33 @@ class DataManager():
             cachedfie = open(cacheDataPath, 'r')
             jsonData = cachedfie.read()
             cachedfie.close()
-            result = self.loadJsonData(jsonData)
-            
-            # start a worker thread to process the cache validity
-            self.cacheDataResult = result
-            self.dataUrl = url
-            self.cacheDataPath = cacheDataPath
-            actionThread = CacheManagerThread()
-            actionThread.setCacheData(self)
-            actionThread.start()
+            try:
+                result = self.loadJsonData(jsonData)
 
-            illicoweb.addon_log("Cache_Data_Manager: Returning Cached Result")
-            return result
-        else:
-            # no cache data so load the url and save it
-            jsonData = illicoweb.getRequest(url)
-            illicoweb.addon_log("Cache_Data_Manager: Loading URL and saving to cache")
-            cachedfie = open(cacheDataPath, 'w')
-            cachedfie.write(jsonData)
-            cachedfie.close()
-            result = self.loadJsonData(jsonData)
-            self.cacheManagerFinished = True
-            illicoweb.addon_log("Cache_Data_Manager: Returning Loaded Result")        
-            return result
-        
+                # start a worker thread to process the cache validity
+                self.cacheDataResult = result
+                self.dataUrl = url
+                self.cacheDataPath = cacheDataPath
+                actionThread = CacheManagerThread()
+                actionThread.setCacheData(self)
+                actionThread.start()
+
+                illicoweb.addon_log("Cache_Data_Manager: Returning Cached Result")
+                return result
+            except:
+                illicoweb.addon_log("Cache_Data_Manager: Corrupt cache")
+                
+
+        # no cache data so load the url and save it
+        jsonData, result = illicoweb.getRequest(url)
+        illicoweb.addon_log("Cache_Data_Manager: Loading URL and saving to cache")
+        cachedfie = open(cacheDataPath, 'w')
+        cachedfie.write(jsonData)
+        cachedfie.close()
+        result = self.loadJsonData(jsonData)
+        self.cacheManagerFinished = True
+        illicoweb.addon_log("Cache_Data_Manager: Returning Loaded Result")        
+        return result        
         
 class CacheManagerThread(threading.Thread):
 
@@ -114,7 +117,7 @@ class CacheManagerThread(threading.Thread):
         cacheValidatorString = self.dataManager.getCacheValidatorFromData(self.dataManager.cacheDataResult)
         illicoweb.addon_log("Cache_Data_Manager: Cache Validator String (" + cacheValidatorString + ")")
         
-        jsonData = illicoweb.getRequest(self.dataManager.dataUrl)
+        jsonData, result = illicoweb.getRequest(self.dataManager.dataUrl)
         loadedResult = self.dataManager.loadJsonData(jsonData)
         loadedValidatorString = self.dataManager.getCacheValidatorFromData(loadedResult)
         illicoweb.addon_log("Cache_Data_Manager: loaded Validator String (" + loadedValidatorString + ")")
