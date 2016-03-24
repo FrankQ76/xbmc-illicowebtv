@@ -54,7 +54,7 @@ dataManager = DataManager()
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "1.8.3"
+ADDON_VERSION = "2.0"
 ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
 ADDON_PATH = xbmc.translatePath( ADDON.getAddonInfo( "path" ).decode('utf-8') )
 
@@ -101,13 +101,20 @@ def login():
 
 
         # now authenticate
-        url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr&password='+PASSWORD+'&userId='+USERNAME
+        url = 'https://illicoweb.videotron.com/illicoservice/authenticate?localLang=fr'
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil',
-                   'X-Requested-With' : 'XMLHttpRequest'}
+                   'X-Requested-With' : 'XMLHttpRequest',
+                   'Content-Type' : 'application/json'}
 
         values = {}
-        login = getRequest(url,urllib.urlencode(values),headers)
+        login = {
+             'userId' : USERNAME,
+			 'password' : PASSWORD
+        }
+        req = urllib2.Request(url,urllib.urlencode(values),headers)
+        response = urllib2.urlopen(req, json.dumps(login))
+        data = response.read()
 
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
@@ -122,8 +129,12 @@ def login():
             return False
         
 def getRequest(url, data=None, headers=None):
-    data = getRequestedUrl(url, data, headers)
-    if data == None:
+    data, result = getRequestedUrl(url, data, headers)
+    if result == 302:
+        addon_log("Unauthenticated.  Logging in.")
+        COOKIE_JAR.clear()
+        COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
+
         login()
         data = getRequestedUrl(url, data, headers)
     
@@ -138,13 +149,13 @@ def getRequestedUrl(url, data=None, headers=None):
 
     if headers is None:
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
-                   'Referer' : 'http://illicoweb.videotron.com'}
-
+                   'Referer' : 'http://illicoweb.videotron.com',
+                   'Accept' : 'application/json, text/plain, */*;version=1.1'}
     try:
         COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
     except:
         login()
-                   
+
     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
     urllib2.install_opener(opener)
     try:
@@ -154,7 +165,7 @@ def getRequestedUrl(url, data=None, headers=None):
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         response.close()
         addon_log("getRequest : %s" %url)
-        return data
+        return (data, 200)
     except urllib2.URLError, e:
         reason = None
         addon_log('We failed to open "%s".' %url)
@@ -169,7 +180,7 @@ def getRequestedUrl(url, data=None, headers=None):
                 xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30004))
                 xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
                 exit(0)
-        return None
+            return (None, e.code)
 
 if re.search( '(GetCarrousel|"carrousel")', sys.argv[ 2 ] ):
     from GuiView import GuiView as viewtype
@@ -206,6 +217,7 @@ class Main( viewtype ):
             self._playLive(unquote_plus(self.args.live).replace( " ", "+" ))
 
         elif self.args.episode:
+            self._checkCookies()
             self._playEpisode(unquote_plus(self.args.episode).replace( " ", "+" ))
 
         elif self.args.channel:
@@ -510,6 +522,7 @@ class Main( viewtype ):
     # --------------------------------------------------------------------------------------------
     
     def _getShowJSON(self, url):
+        self._checkCookies()
 
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -527,6 +540,7 @@ class Main( viewtype ):
         
     # Returns json of Channel labeled <label>
     def _getChannel(self, label):
+        self._checkCookies()
 
         url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
         if xbmc.getLanguage() == "English":
@@ -547,6 +561,7 @@ class Main( viewtype ):
     # Returns json of Seasons from a specific Show's URL
     # Can return a specific season number json if seasonNo arg is non-0
     def _getSeasons(self, url, seasonNo=0):
+        self._checkCookies()
         
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/ChannelName
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' + url
@@ -600,6 +615,7 @@ class Main( viewtype ):
 
     # Returns json of Season from a specific Show's URL
     def _getSeasonJSON(self, id):
+        self._checkCookies()
 
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -611,6 +627,7 @@ class Main( viewtype ):
         
 
     def _getShows(self, url):
+        self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -644,6 +661,7 @@ class Main( viewtype ):
         return shows, fanart, livelist
 
     def _getStingray(self, url, label):
+        self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' #+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -659,6 +677,7 @@ class Main( viewtype ):
                 return i
         
     def _getShow(self, url, label):
+        self._checkCookies()
 
         url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -759,6 +778,7 @@ class Main( viewtype ):
     # --------------------------------------------------------------------------------------------
     
     def _playLive(self, pid):
+        self._checkCookies()
         url = 'https://illicoweb.videotron.com/illicoservice'+pid
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -830,6 +850,27 @@ class Main( viewtype ):
 
         return True
 
+    def _checkCookies(self):
+        # Check if cookies have expired.
+        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
+        cookies = {}
+        addon_log('These are the cookies we have in the cookie file:')
+        for i in COOKIE_JAR:
+            cookies[i.name] = i.value
+            addon_log('%s: %s' %(i.name, i.value))
+        if cookies.has_key('iPlanetDirectoryPro') or cookies.has_key('session-illico-profile'):
+            addon_log('We have valid cookies')
+            login_ = 'old'
+        else:
+            login_ = login()
+
+        if not login_:
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s\n%s' % (LANGUAGE(30004),LANGUAGE(30041)))
+            xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
+            exit(0)
+
+        COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
+        cookies = {}
     def _add_directory_favourites( self ):
         OK = False
         listitems = []
@@ -897,6 +938,7 @@ class Main( viewtype ):
         self._set_content( OK, "episodes", False )  
                 
     def _add_directory_root( self ):
+        self._checkCookies()
 
         url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
         if xbmc.getLanguage() == "English":
