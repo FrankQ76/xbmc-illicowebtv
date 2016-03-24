@@ -182,6 +182,44 @@ def getRequestedUrl(url, data=None, headers=None):
                 exit(0)
             return (None, e.code)
 
+def getRequestedM3u8(url, data=None, headers=None):
+    if not xbmcvfs.exists(COOKIE):
+        login()
+
+    if headers is None:
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'http://illicoweb.videotron.com',
+                   'Accept' : 'application/json, text/plain, */*;version=1.1'}
+    try:
+        COOKIE_JAR.load(COOKIE, ignore_discard=True, ignore_expires=False)
+    except:
+        login()
+
+    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
+    urllib2.install_opener(opener)
+    try:
+        req = urllib2.Request(url,data,headers)
+        response = urllib2.urlopen(req)
+        data = response.geturl()
+        COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
+        response.close()
+        addon_log("getRequest : %s" %url)
+        return data
+    except urllib2.URLError, e:
+        reason = None
+        addon_log('We failed to open "%s".' %url)
+        if hasattr(e, 'reason'):
+            reason = str(e.reason)
+            addon_log('We failed to reach a server.')
+            addon_log('Reason: '+ reason)
+        if hasattr(e, 'code'):
+            reason = str(e.code)
+            addon_log( 'We failed with error code - %s.' % reason )
+            if (e.code == 401):
+                xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30004))
+                xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
+                exit(0)
+        return None
 if re.search( '(GetCarrousel|"carrousel")', sys.argv[ 2 ] ):
     from GuiView import GuiView as viewtype
 else:
@@ -779,7 +817,7 @@ class Main( viewtype ):
     
     def _playLive(self, pid):
         self._checkCookies()
-        url = 'https://illicoweb.videotron.com/illicoservice'+pid
+        url = 'https://tabdroid2.videotron.com/illicoservice'+pid
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -787,20 +825,30 @@ class Main( viewtype ):
         data = getRequest(url,urllib.urlencode(values),headers)
         options = {'live': '1'}
 
-        if not (self._play(data, pid, options, True), True):
-            addon_log("episode error")
+        if not data is None:
+            if not (self._play(data, pid, options), True):
+                addon_log("episode error")
+        else:
+            addon_log("Failed to get link - encrypted?")
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            return False
     
     
     def _playEpisode(self, pid, direct=False):
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data = getRequest(url,urllib.urlencode(values),headers)
 
-        if not (self._play(data, pid, {}, direct)):
-            addon_log("episode error")
-    
+        if not data is None:
+            if not (self._play(data, pid)): #unquote_plus(pid).replace( " ", "+" ))):
+                addon_log("episode error")
+        else:
+            addon_log("Failed to get link - encrypted?")
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            return False
+            
     def _play(self, data, pid, options={}, direct=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
@@ -835,14 +883,15 @@ class Main( viewtype ):
             win.setProperty('illico.playing.live', 'false')
         
         final_url = rtmp+playpath+pageurl+swfurl+live
+        final_url = getRequestedM3u8(path)
         addon_log('Attempting to play url: %s' % final_url)
     
         item = xbmcgui.ListItem(xbmc.getInfoLabel( "ListItem.Property(playLabel)" ), '', xbmc.getInfoLabel( "ListItem.Property(playThumb)" ), xbmc.getInfoLabel( "ListItem.Property(playThumb)" ))
         item.setPath(final_url)
-        
+        direct = True
         if direct:
             addon_log('Direct playback with DVDPlayer')
-            player = xbmc.Player( xbmc.PLAYER_CORE_DVDPLAYER )
+            player = xbmc.Player()
             player.play(final_url, item)
         else:
             addon_log('Indirect playback with setResolvedUrl')
