@@ -308,6 +308,8 @@ class Main( viewtype ):
 
             data = self._getShowJSON(url)
             self._addEpisodesToSeason(data, season)
+        elif self.args.stingray:
+            self._playStingray(unquote_plus(self.args.stingray).replace( " ", "+" ))
 
     def _addToFavourites(self, label, category, url, remove=False):
         if os.path.exists( FAVOURITES_XML ):
@@ -454,7 +456,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/player/' + ep['image'] )
             listitem.setProperty( "fanart_image", xbmc.getInfoLabel( "ListItem.Property(fanart_image)" )) #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/thumb/' + ep['image'])
             
-            listitem.setProperty( "IsPlayable", "true" )
+            #listitem.setProperty( "IsPlayable", "true" )
             
             self._add_context_menu(  label, unquote_plus(seasonUrl.replace( " ", "+" ) ), 'episode', listitem )
             listitems.append( ( url, listitem, False ) )
@@ -511,7 +513,7 @@ class Main( viewtype ):
             channelUrl = url or channel['orderURI']
             uri = sys.argv[ 0 ]
             item = ( label, '' , 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'])
-            url = '%s?live="%s"' %( uri, channelUrl  )
+            url = '%s?stingray="%s"' %( uri, channelUrl  )
             
             infoLabels = {
                 "title":       label,
@@ -815,6 +817,24 @@ class Main( viewtype ):
     # [ End of scrappers -------------------------------------------------------------------------
     # --------------------------------------------------------------------------------------------
     
+    def _playStingray(self, pid):
+        self._checkCookies()
+        url = 'https://illicoweb.videotron.com/illicoservice'+pid
+        addon_log("Stingray music at: %s" %url)
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'https://illicoweb.videotron.com/accueil'}
+        values = {}
+        data = getRequest(url,urllib.urlencode(values),headers)
+        options = {'live': '1'}
+
+        if not data is None:
+            if not (self._play(data, pid, options), True, True):
+                addon_log("episode error")
+        else:
+            addon_log("Failed to get link - encrypted?")
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            return False
+    
     def _playLive(self, pid):
         self._checkCookies()
         url = 'https://tabdroid2.videotron.com/illicoservice'+pid
@@ -849,7 +869,7 @@ class Main( viewtype ):
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
             return False
             
-    def _play(self, data, pid, options={}, direct=False):
+    def _play(self, data, pid, options={}, direct=False, rtmp=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
         encrypted = info['body']['main']['mediaEncryption']
@@ -882,8 +902,10 @@ class Main( viewtype ):
             live = ''
             win.setProperty('illico.playing.live', 'false')
         
-        final_url = rtmp+playpath+pageurl+swfurl+live
-        final_url = getRequestedM3u8(path)
+        if rtmp:
+            final_url = rtmp+playpath+pageurl+swfurl+live
+        else:
+            final_url = getRequestedM3u8(path)
         addon_log('Attempting to play url: %s' % final_url)
     
         item = xbmcgui.ListItem(xbmc.getInfoLabel( "ListItem.Property(playLabel)" ), '', xbmc.getInfoLabel( "ListItem.Property(playThumb)" ), xbmc.getInfoLabel( "ListItem.Property(playThumb)" ))
