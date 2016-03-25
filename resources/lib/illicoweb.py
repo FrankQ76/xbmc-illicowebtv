@@ -68,6 +68,7 @@ USERNAME = ADDON.getSetting( "username" )
 PASSWORD = ADDON.getSetting( "password" )
 DEBUG = ADDON.getSetting('debug')
 HLS = ADDON.getSetting('hls')
+REGIONS = ADDON.getSetting('regions')
 
 LANGXBMC = xbmc.getLocalizedString
 LANGUAGE = ADDON.getLocalizedString
@@ -283,6 +284,25 @@ class Main( viewtype ):
         elif self.args.live:
             self._playLive(unquote_plus(self.args.live).replace( " ", "+" ))
 
+        elif self.args.liveregion:
+            url = unquote_plus(self.args.liveregion).replace( " ", "+" )
+
+            regions, fanart = self._getLiveRegion(url)
+
+            listitems = []
+            if 'channels' in regions:
+                for channel in regions['channels']:
+                    self._addLiveChannel(listitems, channel, '%s?live="%s"', fanart, channel['name'])
+            
+            if len(listitems) == 1:
+                live = listitems[0][0]
+                self._playLive(live[live.find('"'):].replace('"',""))
+                return
+                
+            addon_log("Adding Regions to Live Channel")
+            OK = self._add_directory_items( listitems )
+            self._set_content( OK, "episodes", False )
+            
         elif self.args.episode:
             #self._checkCookies()
             self._playEpisode(unquote_plus(self.args.episode).replace( " ", "+" ))
@@ -416,12 +436,34 @@ class Main( viewtype ):
         except:
             print_exc()
 
-
-        
-    def _addLiveChannel(self, listitems, i, url, fanart):
-        OK = False                
+    def _addLiveRegion(self, listitems, i, link, url):
+        OK = False
         try:
             label = LANGUAGE(30003) #'-- En Direct / Live TV --'
+            #episodeUrl = i['orderURI'] 
+            uri = sys.argv[ 0 ]
+            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
+            url = url %( uri, link  )
+            
+            listitem = xbmcgui.ListItem( *item )
+            listitem.setProperty( 'playLabel', label )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
+            #listitem.setProperty( "fanart_image", fanart)
+            
+            #self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem )
+            listitems.append( ( url, listitem, True ) )
+        except:
+            print_exc()
+
+        
+    def _addLiveChannel(self, listitems, i, url, fanart, label=None):
+        OK = False                
+        try:
+            if label == None:
+                label = LANGUAGE(30003) #'-- En Direct / Live TV --'
+            if not 'orderURI' in i:
+                return
+                
             episodeUrl = i['orderURI'] 
             uri = sys.argv[ 0 ]
             item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
@@ -704,10 +746,10 @@ class Main( viewtype ):
         return dataManager.GetContent(url)
         
 
-    def _getShows(self, url):
+    def _getShows(self, _url):
         #self._checkCookies()
 
-        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" )
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(_url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -725,7 +767,15 @@ class Main( viewtype ):
         else:
             # Add LiveTV to top of show list
             try:
-                self._addLiveChannel(livelist, i, '%s?live="%s"', fanart) 
+                if REGIONS == 'true':
+                    if 'channels' in i:
+                        addon_log("Get Shows for Channel - Found multiple Live feeds")
+                        self._addLiveRegion(livelist, i, unquote_plus(_url).replace( " ", "+" ), '%s?liveregion="%s"')
+                    else:
+                        addon_log("Get Shows for Channel - Found one Live feeds")
+                        self._addLiveChannel(livelist, i, '%s?live="%s"', fanart) 
+                else:
+                    self._addLiveChannel(livelist, i, '%s?live="%s"', fanart)  
             except:
                 print_exc() 
         
@@ -737,6 +787,24 @@ class Main( viewtype ):
             shows = data['body']['main']['submenus']
         
         return shows, fanart, livelist
+
+    def _getLiveRegion(self, url):
+        #self._checkCookies()
+
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" )
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'https://illicoweb.videotron.com/accueil'}
+        values = {}
+        data, result = getRequest(url,urllib.urlencode(values),headers)
+      
+        # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
+        addon_log("Getting fanart from URL: " + url)
+        fanart = "" #self._getChannelFanartImg(data)
+
+        i = json.loads(data)['body']['main']['provider']
+                
+        return i, fanart
+        
 
     def _getStingray(self, url, label):
         #self._checkCookies()

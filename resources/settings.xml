@@ -10,5 +10,9 @@
     <setting label="30014" type="bool" id="resume" default="true"/>
     <setting label="30015" type="bool" id="debug" default="false"/>
 
-    </category>
+	<setting type="sep" />	
+	<setting label="30021" type="bool" id="hls" default="true"/>
+	<setting label="30022" type="bool" id="regions" default="false"/>
+	
+  </category>
 </settings>
