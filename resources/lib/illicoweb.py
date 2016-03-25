@@ -109,8 +109,8 @@ def login():
             xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
             exit(0)
 
-        if (sessionCheck()):
-            return True
+        #if (sessionCheck()):
+        #    return True
         # Set CookieProcessor
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
         urllib2.install_opener(opener)
@@ -159,6 +159,8 @@ def login():
             return False
         
 def getRequest(url, data=None, headers=None):
+    if (not sessionCheck()):
+        login()
     data, result = getRequestedUrl(url, data, headers)
     if (result == 302) or (result == 403):
         addon_log("Unauthenticated.  Logging in.")
