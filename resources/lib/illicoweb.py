@@ -67,6 +67,7 @@ FAVOURITES_XML = os.path.join( ADDON_CACHE, "favourites.xml" )
 USERNAME = ADDON.getSetting( "username" )
 PASSWORD = ADDON.getSetting( "password" )
 DEBUG = ADDON.getSetting('debug')
+HLS = ADDON.getSetting('hls')
 
 LANGXBMC = xbmc.getLocalizedString
 LANGUAGE = ADDON.getLocalizedString
@@ -870,7 +871,12 @@ class Main( viewtype ):
             return False
             
         #self._checkCookies()
-        url = 'https://tabdroid2.videotron.com/illicoservice'+pid
+        if HLS == "false":
+            url = 'https://illicoweb.videotron.com/illicoservice'+pid
+            rtmpStream = True
+        else:
+            url = 'https://tabdroid2.videotron.com/illicoservice'+pid
+            rtmpStream = False
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -879,7 +885,7 @@ class Main( viewtype ):
         options = {'live': '1'}
 
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid, options, True, False)):
+            if not (self._play(data, pid, options, True, rtmpStream)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -890,14 +896,20 @@ class Main( viewtype ):
     def _playEpisode(self, pid, direct=False):
         if self._encrypted(pid):
             return False
-        url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        if HLS == "false":
+            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+            rtmpStream = True
+        else:
+            url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+            rtmpStream = False
+            
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
 
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid)): #unquote_plus(pid).replace( " ", "+" ))):
+            if not (self._play(data, pid, True, rtmpStream)): #unquote_plus(pid).replace( " ", "+" ))):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
