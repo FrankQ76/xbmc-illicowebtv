@@ -1053,6 +1053,7 @@ class Main( viewtype ):
         #else:
         #    live = ''
         #    win.setProperty('illico.playing.live', 'false')
+        live = ''
         
         if rtmpStream:
             final_url = rtmp+playpath+pageurl+swfurl+live
