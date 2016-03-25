@@ -566,7 +566,14 @@ class Main( viewtype ):
     
     def _addShowToChannel(self, season, listitems, fanart, url=None):
         addon_log("-- Adding Show to Channel")
-        label = season['label'] if 'label' in season else season['name']
+        if 'label' in season:
+            label = season['label']
+        elif 'name' in season:
+            label = season['name']
+        elif 'title' in season:
+            label = season['title']
+        else:
+            label = "Unknown"
         if label=='Home':
             return
         OK = False                
@@ -668,6 +675,8 @@ class Main( viewtype ):
             for y in i:
                 if 'seasonNo' in y and y['objectType'] != "EPISODE":
                     self._addSeasonsToShow(y,listitems)
+                elif (y['objectType'] == "PROGRAM"):
+                    self._addShowToChannel(y,listitems, "")
                 else:
                     self._addEpisode(y, listitems)
             
@@ -877,6 +886,8 @@ class Main( viewtype ):
         else:
             url = 'https://tabdroid2.videotron.com/illicoservice'+pid
             rtmpStream = False
+
+            
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -896,6 +907,7 @@ class Main( viewtype ):
     def _playEpisode(self, pid, direct=False):
         if self._encrypted(pid):
             return False
+            
         if HLS == "false":
             url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
             rtmpStream = True
@@ -967,12 +979,12 @@ class Main( viewtype ):
         win.setProperty('illico.playing.pid', unquote_plus(pid).replace( " ", "+" ))
 
         
-        if 'live' in options.keys() and options['live']:
-            live = ' live=1'
-            win.setProperty('illico.playing.live', 'true')
-        else:
-            live = ''
-            win.setProperty('illico.playing.live', 'false')
+        #if 'live' in options.keys() and options['live']:
+        #    live = ' live=1'
+        #    win.setProperty('illico.playing.live', 'true')
+        #else:
+        #    live = ''
+        #    win.setProperty('illico.playing.live', 'false')
         
         if rtmpStream:
             final_url = rtmp+playpath+pageurl+swfurl+live
