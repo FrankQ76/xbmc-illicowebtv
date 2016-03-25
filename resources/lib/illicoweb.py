@@ -140,6 +140,7 @@ def login():
         try:
             response = urllib2.urlopen(req, json.dumps(login))
             data = response.read()
+            COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         except:
             addon_log('Failed to login...')
 
