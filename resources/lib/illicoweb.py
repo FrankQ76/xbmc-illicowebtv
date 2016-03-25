@@ -91,7 +91,7 @@ def sessionCheck():
     
     status = json.loads(data)['head']['userInfo']['clubIllicoStatus']
 
-    if status is 'NOT_CONNECTED':
+    if status == 'NOT_CONNECTED':
         addon_log("SessionCheck: NOT CONNECTED.") 
         return False
 
@@ -911,7 +911,13 @@ class Main( viewtype ):
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
         
-        info = json.loads(data)
+        try:
+            info = json.loads(data)
+        except:
+            addon_log('Encrypted media - cannot play.')
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            return True
+        
         encrypted = info['body']['main']['mediaEncryption']
         
         if encrypted:
