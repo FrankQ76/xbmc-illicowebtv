@@ -303,6 +303,7 @@ class Main( viewtype ):
             OK = self._add_directory_items( listitems )
             self._set_content( OK, "episodes", False )
             
+
         elif self.args.episode:
             #self._checkCookies()
             self._playEpisode(unquote_plus(self.args.episode).replace( " ", "+" ))
@@ -616,6 +617,7 @@ class Main( viewtype ):
             label = season['title']
         else:
             label = "Unknown"
+
         if label=='Home':
             return
         OK = False                
@@ -806,6 +808,8 @@ class Main( viewtype ):
         return i, fanart
         
 
+
+
     def _getStingray(self, url, label):
         #self._checkCookies()
 
@@ -975,6 +979,7 @@ class Main( viewtype ):
     def _playEpisode(self, pid, direct=False):
         if self._encrypted(pid):
             return False
+
             
         if HLS == "false":
             url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
@@ -982,6 +987,8 @@ class Main( viewtype ):
         else:
             url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
             rtmpStream = False
+
+
             
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -989,7 +996,7 @@ class Main( viewtype ):
         data, result = getRequest(url,urllib.urlencode(values),headers)
 
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid, True, rtmpStream)): #unquote_plus(pid).replace( " ", "+" ))):
+            if not (self._play(data, pid, {}, True, rtmpStream)): #unquote_plus(pid).replace( " ", "+" ))):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -1022,6 +1029,10 @@ class Main( viewtype ):
         return False
             
     def _play(self, data, pid, options={}, direct=False, rtmpStream=False):
+
+
+
+
         info = json.loads(data)
         path = info['body']['main']['mainToken']
         #encrypted = info['body']['main']['mediaEncryption']
@@ -1047,13 +1058,12 @@ class Main( viewtype ):
         win.setProperty('illico.playing.pid', unquote_plus(pid).replace( " ", "+" ))
 
         
-        #if 'live' in options.keys() and options['live']:
-        #    live = ' live=1'
-        #    win.setProperty('illico.playing.live', 'true')
-        #else:
-        #    live = ''
-        #    win.setProperty('illico.playing.live', 'false')
-        live = ''
+        if 'live' in options.keys() and options['live']:
+            live = ' live=1'
+            win.setProperty('illico.playing.live', 'true')
+        else:
+            live = ''
+            win.setProperty('illico.playing.live', 'false')
         
         if rtmpStream:
             final_url = rtmp+playpath+pageurl+swfurl+live
