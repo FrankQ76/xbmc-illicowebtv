@@ -845,6 +845,8 @@ class Main( viewtype ):
     # --------------------------------------------------------------------------------------------
     
     def _playStingray(self, pid):
+        if self._encrypted(pid):
+            return False
         #self._checkCookies()
         url = 'https://illicoweb.videotron.com/illicoservice'+pid
         addon_log("Stingray music at: %s" %url)
@@ -863,6 +865,9 @@ class Main( viewtype ):
             return False
     
     def _playLive(self, pid):
+        if self._encrypted(pid):
+            return False
+            
         #self._checkCookies()
         url = 'https://tabdroid2.videotron.com/illicoservice'+pid
         addon_log("Live show at: %s" %url)
@@ -882,6 +887,8 @@ class Main( viewtype ):
     
     
     def _playEpisode(self, pid, direct=False):
+        if self._encrypted(pid):
+            return False
         url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -896,10 +903,29 @@ class Main( viewtype ):
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
             return False
             
+            
+    def _encrypted(self, pid):
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'https://illicoweb.videotron.com/accueil'}
+        values = {}
+        data, result = getRequest(url,urllib.urlencode(values),headers)
+        
+        info = json.loads(data)
+        encrypted = info['body']['main']['mediaEncryption']
+        
+        if encrypted:
+            addon_log('Encrypted media - cannot play.')
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            return True
+        
+        addon_log('Not Encrypted media - requesting play.')        
+        return False
+            
     def _play(self, data, pid, options={}, direct=False, rtmpStream=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
-        encrypted = info['body']['main']['mediaEncryption']
+        #encrypted = info['body']['main']['mediaEncryption']
         connected = info['head']['userInfo']['clubIllicoStatus']
         
         if connected == 'NOT_CONNECTED':
@@ -908,9 +934,9 @@ class Main( viewtype ):
                 xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
                 exit(0)                
         
-        if encrypted:
-            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
-            return False
+        #if encrypted:
+        #    xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+        #    return False
         
         rtmp = path[:path.rfind('/')]
         playpath = ' Playpath=' + path[path.rfind('/')+1:]
