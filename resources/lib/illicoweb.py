@@ -666,6 +666,8 @@ class Main( viewtype ):
                     self._addSeasonsToShow(y,listitems)
                 elif (y['objectType'] == "PROGRAM"):
                     self._addShowToChannel(y,listitems, "")
+                elif (y['objectType'] == "MUSIC"):
+                    self._addShowToChannel(y,listitems, "")
                 else:
                     self._addEpisode(y, listitems)
             
