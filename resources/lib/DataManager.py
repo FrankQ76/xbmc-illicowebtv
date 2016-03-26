@@ -96,7 +96,7 @@ class DataManager():
         jsonData, result = illicoweb.getRequest(url)
         illicoweb.addon_log("Cache_Data_Manager: Loading URL and saving to cache")
         cachedfie = open(cacheDataPath, 'w')
-        cachedfie.write(jsonData)
+        cachedfie.write(jsonData.encode('utf-8'))
         cachedfie.close()
         result = self.loadJsonData(jsonData)
         self.cacheManagerFinished = True
