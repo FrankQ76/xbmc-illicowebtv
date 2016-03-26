@@ -140,7 +140,6 @@ def getRequest(url, data=None, headers=None, params=None):
     addon_log("Getting requested url: %s" % url)
         
     data, result = getRequestedUrl(url, data, headers, params)
-    addon_log(data)
     if (result == 302) or (result == 403):
         addon_log("Unauthenticated.  Logging in.")
         COOKIE_JAR.clear()
@@ -161,25 +160,29 @@ def getRequestedUrl(url, data=None, headers=None, params=None):
                    'Accept' : 'application/json, text/plain, */*;version=1.1'}
 
     COOKIE_JAR.load(ignore_discard=True)
-                   
-    if (not params is None and 'Émissions' in params):
+    with session() as c:
+        c.cookies = COOKIE_JAR
+        #c.cookies.load(ignore_discard=True)
+        r = c.get(url, params = params, headers = headers)
+        addon_log(r.url)
+        c.cookies.save(ignore_discard=True)
+        data = r.text
+        code = r.status_code
+    
+    if (code == 404):
         opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
         urllib2.install_opener(opener)
-        req = urllib2.Request(url + "?" + params,data,headers)
+        if (not params is None):
+            url = url + "?" + params
+        req = urllib2.Request(url,data,headers)
         response = urllib2.urlopen(req)
         data = response.read()
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         response.close()
         addon_log("getRequest : %s" %url)
-        return (data, 200)
-    else:
-        with session() as c:
-            c.cookies = COOKIE_JAR
-            #c.cookies.load(ignore_discard=True)
-            r = c.get(url, params = params, headers = headers)
-            addon_log(r.url)
-            c.cookies.save(ignore_discard=True)
-            return (r.text, r.status_code)
+        code = 200
+        
+    return (data, code)
 
 def getRequestedM3u8(url, data=None, headers=None):
     if headers is None:
