@@ -93,7 +93,7 @@ def sessionCheck():
     with session() as c:
         c.cookies = COOKIE_JAR
         c.cookies.load(ignore_discard=True)
-        r = c.get(url, headers = headers)
+        r = c.get(url, headers = headers, verify=False)
         c.cookies.save(ignore_discard=True)
         data = r.text
     
@@ -128,9 +128,9 @@ def login():
     
     with session() as c:
         c.cookies = COOKIE_JAR
-        c.get('http://illicoweb.videotron.com/accueil')
+        c.get('http://illicoweb.videotron.com/accueil', verify=False)
         c.cookies.save(ignore_discard=True)
-        r = c.post(url, json.dumps(payload), headers=headers)
+        r = c.post(url, json.dumps(payload), headers=headers, verify=False)
         c.cookies.save(ignore_discard=True)
                     
 def getRequest(url, data=None, headers=None, params=None):
@@ -163,7 +163,7 @@ def getRequestedUrl(url, data=None, headers=None, params=None):
     with session() as c:
         c.cookies = COOKIE_JAR
         #c.cookies.load(ignore_discard=True)
-        r = c.get(url, params = params, headers = headers)
+        r = c.get(url, params = params, headers = headers, verify=False)
         addon_log(r.url)
         c.cookies.save(ignore_discard=True)
         data = r.text
@@ -180,7 +180,7 @@ def getRequestedUrl(url, data=None, headers=None, params=None):
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         response.close()
         addon_log("getRequest : %s" %url)
-        code = 200
+        code = response.getcode()
         
     return (data, code)
 
@@ -193,7 +193,7 @@ def getRequestedM3u8(url, data=None, headers=None):
     with session() as c:
         c.cookies = COOKIE_JAR
         c.cookies.load(ignore_discard=True)
-        r = c.get(url, headers = headers)
+        r = c.get(url, headers = headers, verify=False)
         c.cookies.save(ignore_discard=True)
         return (r.url, r.status_code)
 
