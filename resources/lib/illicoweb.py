@@ -409,13 +409,13 @@ class Main( viewtype ):
         
         label = label.replace("/plus/","+")
         
-        favourite = ('<favourite label="%s" category="%s" url="%s" />' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category, url)).decode('utf-8')
+        favourite = ('<favourite label="%s" category="%s" url="%s" />' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", " - Live"), category, url)).decode('utf-8')
         addon_log("----" + favourite)
         if remove or favourite not in favourites:
             if remove:
                 addon_log('Removing %s from favourites' % favourite)
                 label = self.escapeSpecialCharacters(label)
-                favourite = (r'  \<favourite label\=\"%s\" category\=\"%s\".*\n' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category))
+                favourite = (r'  \<favourite label\=\"%s\" category\=\"%s\".*\n' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", " - Live"), category))
                 r = re.compile(favourite.decode('utf-8'))
                 favourites = r.sub('', favourites)
 
@@ -480,10 +480,13 @@ class Main( viewtype ):
         except:
             print_exc()
 
-    def _addLiveRegion(self, listitems, i, link, url):
+    def _addLiveRegion(self, listitems, i, link, url, tag = False):
         OK = False
         try:
-            label = LANGUAGE(30003) #'-- En Direct / Live TV --'
+            if tag:
+                label = i['name'] + " " + LANGUAGE(30003)
+            else:
+                label = LANGUAGE(30003) #'-- En Direct / Live TV --'
             liveUrl = i['selectionUrl']
             uri = sys.argv[ 0 ]
             item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
@@ -494,7 +497,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             #listitem.setProperty( "fanart_image", fanart)
             
-            self._add_context_menu( i['name'] + ' - Live', liveUrl, 'liveregion', listitem, False, True )
+            self._add_context_menu( i['name'] + ' - Live', link, 'liveregion', listitem, False, True )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -1176,6 +1179,8 @@ class Main( viewtype ):
 
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
+
+        
     def _add_directory_favourites( self ):
         OK = False
         listitems = []
@@ -1207,6 +1212,16 @@ class Main( viewtype ):
                             i['link']['uri'] = url 
                             self._addChannel(listitems, i, '%s?live="%s"')
                     
+                    elif category == 'liveregion':
+                        obj = {'name': label, 'selectionUrl': url, 'link': { 'uri': url }, 'image': '', 'plot': '', 'description':''}
+                        i = json.loads(json.dumps(obj))
+
+                        if i:
+                            i['name'] = label.replace(' - Live', "")
+                            i['link']['uri'] = url 
+                            self._addLiveRegion(listitems, i, unquote_plus(url).replace( " ", "+" ), '%s?liveregion="%s"', True)
+
+                            
                     elif category == 'stingray':
                         i = self._getStingray(url, label)
                         if i:
