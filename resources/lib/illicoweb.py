@@ -414,6 +414,7 @@ class Main( viewtype ):
         if remove or favourite not in favourites:
             if remove:
                 addon_log('Removing %s from favourites' % favourite)
+                label = self.escapeSpecialCharacters(label)
                 favourite = (r'  \<favourite label\=\"%s\" category\=\"%s\".*\n' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category))
                 r = re.compile(favourite.decode('utf-8'))
                 favourites = r.sub('', favourites)
@@ -1346,7 +1347,8 @@ class Main( viewtype ):
         nkfd_form = unicodedata.normalize('NFKD', unicode(input_str))
         return u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
 
-
+    def escapeSpecialCharacters (self, text): 
+        return re.sub(r'([\.\\\+\*\?\[\^\]\$\(\)\{\}\!\<\>\|\:])', r'\\\1', text)
 
             
 class Info:
