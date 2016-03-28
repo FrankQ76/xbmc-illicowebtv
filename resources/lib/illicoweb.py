@@ -325,12 +325,14 @@ class Main( viewtype ):
         
         label = label.replace("/plus/","+")
         
-        favourite = ('<favourite label="%s" category="%s" url="%s" />' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category, url))
+        favourite = ('<favourite label="%s" category="%s" url="%s" />' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category, url)).decode('utf-8')
         addon_log("----" + favourite)
         if remove or favourite not in favourites:
             if remove:
                 addon_log('Removing %s from favourites' % favourite)
-                favourites = favourites.replace( '  %s\n' % favourite, '' )
+                favourite = (r'  \<favourite label\=\"%s\" category\=\"%s\".*\n' % (label.replace(" -- En Direct --", " - Live").replace(" -- Live --", "-Live"), category))
+                r = re.compile(favourite.decode('utf-8'))
+                favourites = r.sub('', favourites)
                 refresh = True
             else:
                 favourites = favourites.replace( '</favourites>', '  %s\n</favourites>' % (favourite))
@@ -344,6 +346,7 @@ class Main( viewtype ):
                     except: pass
                     xbmc.executebuiltin( 'Action(ParentDir)' )
                     xbmc.sleep( 1000 )
+                WINDOW = xbmcgui.Window( 10000 ) 
                 WINDOW.setProperty("force_data_reload", "true")
                 xbmc.executebuiltin( 'Container.Refresh' )    
             
@@ -395,7 +398,7 @@ class Main( viewtype ):
         OK = False
         try:
             label = LANGUAGE(30003) #'-- En Direct / Live TV --'
-            #episodeUrl = i['orderURI'] 
+            liveUrl = i['selectionUrl']
             uri = sys.argv[ 0 ]
             item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
             url = url %( uri, link  )
@@ -405,7 +408,7 @@ class Main( viewtype ):
             listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
             #listitem.setProperty( "fanart_image", fanart)
             
-            #self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem )
+            self._add_context_menu( i['name'] + ' - Live', liveUrl, 'liveregion', listitem )
             listitems.append( ( url, listitem, True ) )
         except:
             print_exc()
@@ -1084,7 +1087,8 @@ class Main( viewtype ):
                             self._addChannel(listitems, i, '%s?channel="%s"')
 
                     elif category == 'live':
-                        i = self._getChannel(label.replace(' - Live', ''))
+                        obj = {'name': label, 'link': { 'uri': url }, 'image': '', 'plot': '', 'description':''}
+                        i = json.loads(json.dumps(obj))
                         if i:
                             i['name'] = label.replace(' - Live', " " + LANGUAGE(30003))
                             i['link']['uri'] = url 
