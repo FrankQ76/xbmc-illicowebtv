@@ -29,7 +29,7 @@ import xbmcvfs
 import json
 import requests
 requests.packages.urllib3.disable_warnings()
-
+import unicodedata
 import functools
 import ssl
 
@@ -296,7 +296,7 @@ class Main( viewtype ):
         elif self.args.show:
             try:
                 OK = False
-                listitems = self._getSeasons(unquote_plus(self.args.show).replace( " ", "+" ))
+                listitems = self.natural_sort(self._getSeasons(unquote_plus(self.args.show).replace( " ", "+" )), False)
             
                 if listitems:
                     from operator import itemgetter
@@ -440,7 +440,7 @@ class Main( viewtype ):
     def _addEpisodesToSeason(self, data, season):
         addon_log("-- Adding Episodes to Season")
         OK = False
-        listitems = self._getEpisodes(data, season)
+        listitems = self.natural_sort(self._getEpisodes(data, season), False) 
 
         if listitems:
             listitems = self.natural_sort(listitems, True)
@@ -1164,7 +1164,7 @@ class Main( viewtype ):
     
         if listitems:
             addon_log("Adding Channels to Root")
-            OK = self._add_directory_items( listitems )
+            OK = self._add_directory_items( self.natural_sort(listitems, False) )
         self._set_content( OK, "episodes", False )
 
     '''
@@ -1202,7 +1202,7 @@ class Main( viewtype ):
     ' e.g. 1, 2, 3, ... 10, 11, 12, ... 100, 101, 102, etc...
     '''
     def natsort_key(self, item):
-        chunks = re.split('(\d+(?:\.\d+)?)', item[1].getLabel())
+        chunks = re.split('(\d+(?:\.\d+)?)', self.remove_accents(item[1].getLabel().decode('utf-8')))
         for ii in range(len(chunks)):
             if chunks[ii] and chunks[ii][0] in '0123456789':
                 if '.' in chunks[ii]: numtype = float
@@ -1216,6 +1216,11 @@ class Main( viewtype ):
         sortlist = [item for item in seq]
         sortlist.sort(key=self.natsort_key, reverse = reverseBool)
         return sortlist
+
+                
+    def remove_accents(self, input_str):
+        nkfd_form = unicodedata.normalize('NFKD', unicode(input_str))
+        return u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
             
 class Info:
     def __init__( self, *args, **kwargs ):
