@@ -27,6 +27,8 @@ import xbmcaddon
 import xbmcplugin
 import xbmcvfs
 import json
+import requests
+requests.packages.urllib3.disable_warnings()
 
 import functools
 import ssl
@@ -140,13 +142,17 @@ def getRequest(url, data=None, headers=None, params=None):
     addon_log("Getting requested url: %s" % url)
         
     data, result = getRequestedUrl(url, data, headers, params)
-    if (result == 302) or (result == 403):
+    if (result == 302):
         addon_log("Unauthenticated.  Logging in.")
         COOKIE_JAR.clear()
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
 
         login()
         data = getRequestedUrl(url, data, headers)
+    
+    if (result == 403):
+        addon_log("Unauthorized content.  Encrypted or for Club Illico Subscribers only")
+        return None, result
     
     if data == None:
         addon_log('No response from server')
