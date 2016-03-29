@@ -233,15 +233,17 @@ def setWatched( strwatched, remove=False, refresh=True ):
 
     try:
         watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
-
         url, label = strwatched.split( "*" )
 
-        watched[ url ] = watched.get( url ) or []
-        # add to watched
-        if label not in watched[ url ]:
-            watched[ url ].append( label )
+        if os.path.exists( watched_db ):
+            watched = eval(open( watched_db ).read())
+            watched[ url ] = watched.get( url ) or []
+            # add to watched
+            if label not in watched[ url ]:
+                watched[ url ].append( label )
+        else:
+            watched = {}
+            watched[ url ] = label
 
         # remove from watched
         if remove and label in watched[ url ]:
