@@ -13,6 +13,12 @@
 	<setting type="sep" />	
 	<setting label="30021" type="bool" id="hls" default="true"/>
 	<setting label="30022" type="bool" id="regions" default="false"/>
-	
+
+  </category>
+  
+  <!-- Paths -->
+  <category label="30023">
+	<setting label="30024" type="lsep"/>
+	<setting label="30025" type="folder" id="cachePath" source="auto" option="writeable" value=""/>
   </category>
 </settings>

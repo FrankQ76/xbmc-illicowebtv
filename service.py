@@ -23,7 +23,11 @@ from traceback import print_exc
 from xbmcaddon import Addon
 
 ADDON = Addon( "plugin.video.illicoweb" )
-ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ) )
+if (ADDON.getSetting( "cachePath" ) is '') or (not os.path.exists(ADDON.getSetting( "cachePath" ))):
+    ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
+else:
+    ADDON_CACHE = xbmc.translatePath( ADDON.getSetting( "cachePath" ).decode('utf-8') )
+WATCHED_DB = os.path.join( ADDON_CACHE, "watched.db" )
 DEBUG = ADDON.getSetting('debug')
 
 LANGUAGE = ADDON.getLocalizedString
@@ -43,9 +47,8 @@ def format_time(seconds):
 def getWatched():
     watched = {}
     try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
+        if os.path.exists( WATCHED_DB ):
+            watched = eval( open( WATCHED_DB ).read() )
     except:
         print_exc()
     return watched    
@@ -58,9 +61,8 @@ def setWatched(strwatched, remove=False, refresh=True):
     if isinstance(strwatched, str):
         strwatched = strwatched.decode('utf-8')
     try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
+        if os.path.exists( WATCHED_DB ):
+            watched = eval( open( WATCHED_DB ).read() )
 
         url, label = strwatched.split( "*" )
 
@@ -73,7 +75,7 @@ def setWatched(strwatched, remove=False, refresh=True):
         if remove and label in watched[ url ]:
             del watched[ url ][ watched[ url ].index( label ) ]
 
-        file( watched_db, "w" ).write( "%r" % watched )
+        file( WATCHED_DB, "w" ).write( "%r" % watched )
     except:
         print_exc()
     if refresh:

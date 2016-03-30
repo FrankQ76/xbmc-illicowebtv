@@ -61,14 +61,18 @@ dataManager = DataManager()
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
 ADDON_VERSION = "2.0"
-ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
 ADDON_PATH = xbmc.translatePath( ADDON.getAddonInfo( "path" ).decode('utf-8') )
+if (ADDON.getSetting( "cachePath" ) is '') or (not os.path.exists(ADDON.getSetting( "cachePath" ))):
+    ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
+else:
+    ADDON_CACHE = xbmc.translatePath( ADDON.getSetting( "cachePath" ).decode('utf-8') )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
 COOKIE_JAR = cookielib.LWPCookieJar(COOKIE)
 
 ICON = os.path.join(ADDON_PATH, 'icon.png')
 FAVOURITES_XML = os.path.join( ADDON_CACHE, "favourites.xml" )
+WATCHED_DB = os.path.join( ADDON_CACHE, "watched.db" )
 
 USERNAME = ADDON.getSetting( "username" )
 PASSWORD = ADDON.getSetting( "password" )
@@ -217,9 +221,8 @@ def getRequestedM3u8(url, data=None, headers=None):
 def getWatched():
     watched = {}
     try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
-        if os.path.exists( watched_db ):
-            watched = eval( open( watched_db ).read() )
+        if os.path.exists( WATCHED_DB ):
+            watched = eval( open( WATCHED_DB ).read() )
     except:
         print_exc()
     return watched
@@ -232,11 +235,10 @@ def setWatched( strwatched, remove=False, refresh=True ):
         strwatched = strwatched.decode('utf-8')
 
     try:
-        watched_db = os.path.join( ADDON_CACHE, "watched.db" )
         url, label = strwatched.split( "*" )
 
-        if os.path.exists( watched_db ):
-            watched = eval(open( watched_db ).read())
+        if os.path.exists( WATCHED_DB ):
+            watched = eval(open( WATCHED_DB ).read())
             watched[ url ] = watched.get( url ) or []
             # add to watched
             if label not in watched[ url ]:
@@ -249,7 +251,7 @@ def setWatched( strwatched, remove=False, refresh=True ):
         if remove and label in watched[ url ]:
             del watched[ url ][ watched[ url ].index( label ) ]
 
-        file( watched_db, "w" ).write( "%r" % watched )
+        file( WATCHED_DB, "w" ).write( "%r" % watched )
     except:
         print_exc()
     if refresh:
@@ -1182,7 +1184,6 @@ class Main( viewtype ):
         COOKIE_JAR.load(COOKIE, ignore_discard=False, ignore_expires=False)
         cookies = {}
 
-        
     def _add_directory_favourites( self ):
         OK = False
         listitems = []
@@ -1223,7 +1224,6 @@ class Main( viewtype ):
                             i['link']['uri'] = url 
                             self._addLiveRegion(listitems, i, unquote_plus(url).replace( " ", "+" ), '%s?liveregion="%s"', True)
 
-                            
                     elif category == 'stingray':
                         i = self._getStingray(url, label)
                         if i:
