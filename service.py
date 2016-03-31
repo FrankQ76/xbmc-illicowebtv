@@ -23,11 +23,6 @@ from traceback import print_exc
 from xbmcaddon import Addon
 
 ADDON = Addon( "plugin.video.illicoweb" )
-if (ADDON.getSetting( "cachePath" ) is '') or (not os.path.exists(ADDON.getSetting( "cachePath" ))):
-    ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
-else:
-    ADDON_CACHE = xbmc.translatePath( ADDON.getSetting( "cachePath" ).decode('utf-8') )
-WATCHED_DB = os.path.join( ADDON_CACHE, "watched.db" )
 DEBUG = ADDON.getSetting('debug')
 
 LANGUAGE = ADDON.getLocalizedString
@@ -44,9 +39,22 @@ def format_time(seconds):
     else:
         return "%02d:%02d" % (minutes, seconds)
 
+def getAddonCache():
+    if (ADDON.getSetting( "cachePath" ) is '') or (not os.path.exists(ADDON.getSetting( "cachePath" ))):
+        return xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
+    else:
+        return xbmc.translatePath( ADDON.getSetting( "cachePath" ).decode('utf-8') )
+        
+def getWatchedDB():
+    return os.path.join( getAddonCache(), "watched.db" )
+
+def getResumeDB():
+    return os.path.join( getAddonCache(), 'illico_resume.db')
+        
 def getWatched():
     watched = {}
     try:
+        WATCHED_DB = getWatchedDB()
         if os.path.exists( WATCHED_DB ):
             watched = eval( open( WATCHED_DB ).read() )
     except:
@@ -61,6 +69,7 @@ def setWatched(strwatched, remove=False, refresh=True):
     if isinstance(strwatched, str):
         strwatched = strwatched.decode('utf-8')
     try:
+        WATCHED_DB = getWatchedDB()
         if os.path.exists( WATCHED_DB ):
             watched = eval( open( WATCHED_DB ).read() )
 
@@ -86,17 +95,13 @@ class Service(xbmc.Player):
     """
     An XBMC Service that monitors playback from this addon to save and record resume positions
     """
-    
-    # Static constants for resume db and lockfile paths
-    RESUME_FILE = None
-    
+        
     def __init__(self, *args, **kwargs):
         xbmc.Player.__init__(self, *args, **kwargs)
         self.reset()
 
-        self.RESUME_FILE    = os.path.join(ADDON_CACHE, 'illico_resume.db')
         self.resume, self.dates_added = self.load_resume_file()
-        addon_log('Resume file: %s' % self.RESUME_FILE)
+        addon_log('Resume file: %s' % getResumeDB())
         
         addon_log('Starting...')
         xbmcgui.Window(10000).setProperty('plugin.video.illicoweb_running', 'True')
@@ -204,9 +209,10 @@ class Service(xbmc.Player):
         # Load resume file
         resume = {}
         dates_added = {}
-        if os.path.isfile(self.RESUME_FILE):
-            addon_log('Loading resume file: %s' % (self.RESUME_FILE))
-            resume_fh = open(self.RESUME_FILE, 'rU')
+        RESUME_FILE = getResumeDB()
+        if os.path.isfile(RESUME_FILE):
+            addon_log('Loading resume file: %s' % (RESUME_FILE))
+            resume_fh = open(RESUME_FILE, 'rU')
             try:
                 resume_str = resume_fh.read()
             finally:
@@ -243,8 +249,9 @@ class Service(xbmc.Player):
         Saves the current resume dictionary to disk. See load_resume_file for file format
         """
         str = ""
-        addon_log('Saving %d entries to %s' % (len(resume.keys()), self.RESUME_FILE))
-        resume_fh = open(self.RESUME_FILE, 'w')
+        RESUME_FILE = getResumeDB()
+        addon_log('Saving %d entries to %s' % (len(resume.keys()), RESUME_FILE))
+        resume_fh = open(RESUME_FILE, 'w')
         try:
             for pid, seekTime in resume.items():
                 str += "%s %f %d\n" % (pid, seekTime, dates_added[pid])
