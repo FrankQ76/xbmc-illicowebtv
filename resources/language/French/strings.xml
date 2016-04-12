@@ -3,7 +3,7 @@
   <string id="30001">Incapable d'obtenir</string>
   <string id="30002">Echec de l'opération - </string>
   <string id="30003">-- En Direct --</string>
-  <string id="30004">Votre nom d'utiliateur ou mot de passe sont incorrects.</string>
+  <string id="30004">Votre nom d'utilisateur ou mot de passe sont incorrects.</string>
   <string id="30041">Veuillez mettre à jour dans les options.</string>
   <string id="30005">Retirer des favoris IllicoTV</string>
   <string id="30006">Ajouter aux favoris IllicoTV</string>
@@ -21,5 +21,10 @@
   <string id="30018">Saison</string>
   <string id="30019"> n'existe plus. Supprimer?</string>
   <string id="30020">Vous n'avez pas de favoris.</string>
+  <string id="30021">Préférer le contenu HD</string>
+  <string id="30022">Permettre sélection de source pour Direct</string>
+  <string id="30023">Répertoires</string>
+  <string id="30024">Experts seulement - Laissez vide pour valeurs par défaut</string>
+  <string id="30025">Paramètres</string>
 </strings>
 
