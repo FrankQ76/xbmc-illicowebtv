@@ -26,5 +26,7 @@
   <string id="30023">Paths</string>
   <string id="30024">Experts only - Leave blank for default values</string>
   <string id="30025">Settings</string>
+  <string id="30026">Purge Cache</string>
+  <string id="30027">Cache has been purged.</string>
 </strings>
 

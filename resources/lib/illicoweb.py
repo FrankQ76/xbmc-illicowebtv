@@ -31,6 +31,7 @@ import json
 import requests
 requests.packages.urllib3.disable_warnings()
 
+import shutil
 import unicodedata
 import functools
 import ssl
@@ -278,6 +279,11 @@ class Main( viewtype ):
             login()
             self._add_directory_root()
 
+        elif self.args.purgecache:
+            addon_log("Purging %s" % os.path.join(xbmc.translatePath( ADDON.getAddonInfo('profile').decode('utf-8') ), "cache"))
+            shutil.rmtree(os.path.join(xbmc.translatePath( ADDON.getAddonInfo('profile').decode('utf-8') ), "cache"), ignore_errors=True)
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30027)))
+            
         elif self.args.setwatched or self.args.setunwatched:
             strwatched = self.args.setwatched or self.args.setunwatched
             if self.args.all:

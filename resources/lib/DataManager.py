@@ -30,7 +30,7 @@ class DataManager():
         if 'episodes' in result['body']['main']:
             for episode in result['body']['main']['episodes']:
                 itemCount = itemCount + 1
-                dataHashString = dataHashString + str(itemCount) + "_" + episode['title'] + "|"
+                dataHashString = dataHashString + str(itemCount) + "_" + episode['title'] + "_" + str(episode['id']) + "|"
         
     
         # hash the data
@@ -126,7 +126,7 @@ class CacheManagerThread(threading.Thread):
         if(cacheValidatorString != loadedValidatorString):
             illicoweb.addon_log("Cache_Data_Manager: CacheManagerThread Saving new cache data and reloading container")
             cachedfie = open(self.dataManager.cacheDataPath, 'w')
-            cachedfie.write(jsonData)
+            cachedfie.write(jsonData.encode('utf-8'))
             cachedfie.close()
 
             # we need to refresh but will wait until the main function has finished
