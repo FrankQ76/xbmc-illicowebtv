@@ -842,7 +842,9 @@ class Main( viewtype ):
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         addon_log("Getting fanart from URL: " + url)
-        fanart = "http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/" + json.loads(data)['body']['main']['backgroundURL'] #self._getChannelFanartImg(data)
+	fanart = ""
+        if 'backgroundURL' in json.loads(data)['body']['main']:
+            fanart = "http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/" + json.loads(data)['body']['main']['backgroundURL'] #self._getChannelFanartImg(data)
 
         i = json.loads(data)['body']['main']['provider']
         
