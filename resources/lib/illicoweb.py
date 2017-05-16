@@ -1271,20 +1271,8 @@ class Main( viewtype ):
                 
     def _add_directory_root( self ):
         #self._checkCookies()
-
-        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
-        if xbmc.getLanguage() == "English":
-            url = url + 'en'
-        else: url = url + 'fr'
-        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
-                   'Referer' : 'https://illicoweb.videotron.com/accueil'}
-        values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
-
+        listitems = []
         try:
-            jsonList = json.loads(data)['body']['main']
-            listitems = []
-            
             if os.path.exists( FAVOURITES_XML ):
                 uri = sys.argv[ 0 ]
                 item = (LANGUAGE(30007), '', 'DefaultAddonScreensaver.png')
@@ -1293,17 +1281,34 @@ class Main( viewtype ):
                 url = '%s?favoris="root"' %uri 
                 listitem.addContextMenuItems( [( LANGXBMC(184), "Container.Refresh")], False )
                 listitems.append(( url, listitem, True ))
+        except:
+            xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30016))
+                
+        self._add_channels_lang('fr', listitems)
+        self._add_channels_lang('en', listitems)
+    
+        if listitems:
+            addon_log("Adding Channels to Root")
+            OK = self._add_directory_items( self.natural_sort(listitems, False) )
+        self._set_content( OK, "episodes", False )
+
+    def _add_channels_lang( self, lang, listitems ):
+        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang=' + lang
+        headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
+                   'Referer' : 'https://illicoweb.videotron.com/accueil'}
+        values = {}
+        data, result = getRequest(url,urllib.urlencode(values),headers)
+
+        try:
+            jsonList = json.loads(data)['body']['main']
             
             OK = False
             for i in jsonList:
                 self._addChannel(listitems, i, '%s?channel="%s"')
         except:
             xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30016))
-    
-        if listitems:
-            addon_log("Adding Channels to Root")
-            OK = self._add_directory_items( self.natural_sort(listitems, False) )
-        self._set_content( OK, "episodes", False )
+
+        return listitems
 
     '''
     ' Section de gestion des menus
