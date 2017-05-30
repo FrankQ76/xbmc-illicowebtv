@@ -816,7 +816,7 @@ class Main( viewtype ):
         values = {}
 
         # get Channel sections to get URL for JSON shows
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url))
+        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url) + '&localeLang=all')
         sections = json.loads(data)['body']['main']['sections']
 
         if (len(sections) == 1):
@@ -883,7 +883,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ))
+        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ) + '&localeLang=all')
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         addon_log("Getting fanart from URL: " + url)
@@ -923,7 +923,7 @@ class Main( viewtype ):
     def _getLiveRegion(self, url):
         #self._checkCookies()
 
-        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" )
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" ) + '&localeLang=all'
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -943,7 +943,7 @@ class Main( viewtype ):
     def _getStingray(self, url, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' #+unquote_plus(url).replace( " ", "+" )
+        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' + '&localeLang=all' #+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -959,7 +959,7 @@ class Main( viewtype ):
     def _getShow(self, url, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" )
+        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" ) + '&localeLang=all'
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
