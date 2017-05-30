@@ -825,7 +825,7 @@ class Main( viewtype ):
             return           
         
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ) + '&localeLang=all')
         data = dataManager.GetContent(url)
         
         listitems = []
