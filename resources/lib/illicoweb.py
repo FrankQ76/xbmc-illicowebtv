@@ -1095,6 +1095,12 @@ class Main( viewtype ):
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
+        if result == 403 and HLS == "true":
+            addon_log('HLS content unavailable - falling back to rtmp')
+            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+            rtmpStream = True
+            data, result = getRequest(url,urllib.urlencode(values),headers)
+        
         options = {'live': '1'}
 
         if (not data is None) and (result == 200):
@@ -1124,7 +1130,12 @@ class Main( viewtype ):
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
-
+        if result == 403 and HLS == "true":
+            addon_log('HLS content unavailable - falling back to rtmp')
+            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+            rtmpStream = True
+            data, result = getRequest(url,urllib.urlencode(values),headers)
+        
         if (not data is None) and (result == 200):
             if not (self._play(data, pid, {}, True, rtmpStream)): #unquote_plus(pid).replace( " ", "+" ))):
                 addon_log("episode error")
@@ -1159,10 +1170,6 @@ class Main( viewtype ):
         return False
             
     def _play(self, data, pid, options={}, direct=False, rtmpStream=False):
-
-
-
-
         info = json.loads(data)
         path = info['body']['main']['mainToken']
         #encrypted = info['body']['main']['mediaEncryption']
