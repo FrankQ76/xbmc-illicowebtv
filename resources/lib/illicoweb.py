@@ -88,7 +88,7 @@ def addon_log(string):
     if DEBUG == 'true':
         if isinstance(string, unicode):
             string = string.encode('utf-8')
-        xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string))
+        xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string), xbmc.LOGNOTICE)
 
 def sessionCheck():
     addon_log('SessionCheck: In progress...')
