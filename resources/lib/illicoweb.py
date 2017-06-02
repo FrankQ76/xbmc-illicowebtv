@@ -872,7 +872,10 @@ class Main( viewtype ):
         values = {}
 
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
-        url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
+        if '?' in url:
+            url = url + '&localeLang=all'
+        else: url = url + '?localeLang=all'
         return dataManager.GetContent(url)
         
 
