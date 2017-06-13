@@ -788,10 +788,7 @@ class Main( viewtype ):
     def _getChannel(self, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang='
-        if xbmc.getLanguage() == "English":
-            url = url + 'en'
-        else: url = url + 'fr'
+        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang=all'
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -825,7 +822,10 @@ class Main( viewtype ):
             return           
         
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ) + '&localeLang=all')
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
+        if '?' in url:
+            url = url + '&localeLang=all'
+        else: url = url + '?localeLang=all'
         data = dataManager.GetContent(url)
         
         listitems = []
@@ -872,10 +872,11 @@ class Main( viewtype ):
         values = {}
 
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
+        url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
         if '?' in url:
             url = url + '&localeLang=all'
         else: url = url + '?localeLang=all'
+        
         return dataManager.GetContent(url)
         
 
