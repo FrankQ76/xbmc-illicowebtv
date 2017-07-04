@@ -453,8 +453,8 @@ class Main( viewtype ):
             episodeUrl = i['link']['uri']
 
             uri = sys.argv[ 0 ]
-            #item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'], 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
-            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'], 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'], 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
+
             url = url %( uri, episodeUrl  )
             
             infoLabels = {
@@ -479,7 +479,7 @@ class Main( viewtype ):
             listitem.setInfo( "Video", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'] )
             listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg') #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/channels/' + ep['largeLogo'])
             
             if '?live=' in url:
@@ -497,8 +497,8 @@ class Main( viewtype ):
             episodeUrl = '/chaines/Stingray'
 
             uri = sys.argv[ 0 ]
-            #item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'], 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
-            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/stingmus_TF.png', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/stingmus_TF.png')
+            #item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'], 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png')
             url = url %( uri, episodeUrl  )
             
             if xbmc.getLanguage() == "English":
@@ -527,7 +527,7 @@ class Main( viewtype ):
             listitem.setInfo( "Video", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/stingmus_TF.png' )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png' )
             listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg') #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/channels/' + ep['largeLogo'])
             
             category = 'channel'
@@ -544,12 +544,12 @@ class Main( viewtype ):
                 label = LANGUAGE(30003) #'-- En Direct / Live TV --'
             liveUrl = i['selectionUrl']
             uri = sys.argv[ 0 ]
-            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
             url = url %( uri, link  )
             
             listitem = xbmcgui.ListItem( *item )
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'] )
             #listitem.setProperty( "fanart_image", fanart)
             
             self._add_context_menu( i['name'] + ' - Live', link, 'liveregion', listitem, False, True )
@@ -568,12 +568,12 @@ class Main( viewtype ):
                 
             episodeUrl = i['orderURI'] 
             uri = sys.argv[ 0 ]
-            item = ( label, '', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'])
+            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
             url = url %( uri, episodeUrl  )
             
             listitem = xbmcgui.ListItem( *item )
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             
             self._add_context_menu( i['name'] + ' - Live', episodeUrl, 'live', listitem, False, True )
@@ -710,7 +710,7 @@ class Main( viewtype ):
         try:
             channelUrl = url or channel['orderURI']
             uri = sys.argv[ 0 ]
-            item = ( label, '' , 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'])
+            item = ( label, '' , 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + channel['image'])
             url = '%s?stingray="%s"' %( uri, channelUrl  )
             
             infoLabels = {
@@ -723,7 +723,7 @@ class Main( viewtype ):
             listitem.setInfo( "Music", infoLabels )
 
             listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + channel['image'] )
+            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + channel['image'] )
             listitem.setProperty( "fanart_image", fanart)
 
             self._add_context_menu( label, channelUrl, 'stingray', listitem, False, True )
@@ -755,7 +755,7 @@ class Main( viewtype ):
             listitem = xbmcgui.ListItem( *item )
 
             listitem.setProperty( 'playLabel', label )
-            #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/media/public/images/providers_logos/common/' + i['image'] )
+            #listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'] )
             listitem.setProperty( "fanart_image", fanart)
             self._add_context_menu( label, showUrl, 'show', listitem, False, True )
             listitems.append( ( url, listitem, True ) )
@@ -891,9 +891,9 @@ class Main( viewtype ):
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         addon_log("Getting fanart from URL: " + url)
-	fanart = ""
+        fanart = ""
         if 'backgroundURL' in json.loads(data)['body']['main']:
-            fanart = "http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/" + json.loads(data)['body']['main']['backgroundURL'] #self._getChannelFanartImg(data)
+            fanart = "https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/" + json.loads(data)['body']['main']['backgroundURL'] #self._getChannelFanartImg(data)
 
         i = json.loads(data)['body']['main']['provider']
         
