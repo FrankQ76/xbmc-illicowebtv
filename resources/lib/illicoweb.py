@@ -290,7 +290,8 @@ class Main( viewtype ):
 
         
         if self.args.isempty():
-            login()
+            if (not sessionCheck()):
+                login()
             self._add_directory_root()
 
         elif self.args.purgecache:
