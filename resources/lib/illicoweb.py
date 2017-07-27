@@ -102,7 +102,10 @@ def sessionCheck():
 
     with session() as c:
         c.cookies = COOKIE_JAR
-        c.cookies.load(ignore_discard=True)
+        try:
+            c.cookies.load(ignore_discard=True)
+        except:
+            c.cookies.save(ignore_discard=True)
         r = c.get(url, headers = headers, verify=False)
         c.cookies.save(ignore_discard=True)
         data = r.text
@@ -129,21 +132,32 @@ def login():
                'Referer' : 'https://illicoweb.videotron.com/accueil',
                'X-Requested-With' : 'XMLHttpRequest',
                'Content-Type' : 'application/json'}
-        
-    payload = {
-        'userId' : USERNAME,
-        'password' : PASSWORD
-    }
 
-    url = 'https://tabdroid2.videotron.com/illicoservice/authenticate?localLang=fr'
+    url = 'https://id.videotron.com/oam/server/authentication'
+    payload = {
+        'username' : USERNAME,
+        'password' : PASSWORD,
+        'type' : 'EspaceClient-Residentiel',
+        'successurl' : 'https://id.videotron.com/vl-sso-bin/login-app-result.pl'
+    }
     
     with session() as c:
         c.cookies = COOKIE_JAR
         c.get('http://illicoweb.videotron.com/accueil', verify=False)
         c.cookies.save(ignore_discard=True)
+        r = c.post(url, data=payload, headers=headers, verify=False)
+        c.cookies.save(ignore_discard=True)
+               
+    url = 'https://tabdroid2.videotron.com/illicoservice/authenticate?localLang=fr'
+    payload = {
+        'userId' : USERNAME,
+        'password' : PASSWORD
+    }
+    
+    with session() as c:
+        c.cookies = COOKIE_JAR
         r = c.post(url, json.dumps(payload), headers=headers, verify=False)
         c.cookies.save(ignore_discard=True)
-
                     
 def getRequest(url, data=None, headers=None, params=None):
     if (not sessionCheck()):
@@ -1340,10 +1354,10 @@ class Main( viewtype ):
         except:
             xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30016))
                 
-        self._add_channels_lang('fr', listitems)
-        self._add_channels_lang('en', listitems)
-        if len(listitems) > 0:
-            self._addStingrayMusique(listitems, '%s?channel="%s"')
+        if xbmc.getLanguage() == "English":
+            self._add_channels_lang('en', listitems)
+        else:
+            self._add_channels_lang('fr', listitems)
     
         OK = False
         if listitems:
