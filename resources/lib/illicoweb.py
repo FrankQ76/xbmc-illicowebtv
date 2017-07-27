@@ -1354,7 +1354,7 @@ class Main( viewtype ):
         except:
             xbmcgui.Dialog().ok(ADDON_NAME, LANGUAGE(30016))
                 
-        if xbmc.getLanguage() == "English":
+        if 'English' in xbmc.getLanguage():
             self._add_channels_lang('en', listitems)
         else:
             self._add_channels_lang('fr', listitems)
