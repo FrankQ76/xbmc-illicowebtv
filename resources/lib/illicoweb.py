@@ -78,7 +78,6 @@ WATCHED_DB = os.path.join( ADDON_CACHE, "watched.db" )
 USERNAME = ADDON.getSetting( "username" )
 PASSWORD = ADDON.getSetting( "password" )
 DEBUG = ADDON.getSetting('debug')
-HLS = ADDON.getSetting('hls')
 REGIONS = ADDON.getSetting('regions')
 
 LANGXBMC = xbmc.getLocalizedString
@@ -146,17 +145,6 @@ def login():
         c.get('http://illicoweb.videotron.com/accueil', verify=False)
         c.cookies.save(ignore_discard=True)
         r = c.post(url, data=payload, headers=headers, verify=False)
-        c.cookies.save(ignore_discard=True)
-               
-    url = 'https://tabdroid2.videotron.com/illicoservice/authenticate?localLang=fr'
-    payload = {
-        'userId' : USERNAME,
-        'password' : PASSWORD
-    }
-    
-    with session() as c:
-        c.cookies = COOKIE_JAR
-        r = c.post(url, json.dumps(payload), headers=headers, verify=False)
         c.cookies.save(ignore_discard=True)
                     
 def getRequest(url, data=None, headers=None, params=None):
@@ -1100,30 +1088,22 @@ class Main( viewtype ):
         if self._encrypted(pid):
             return False
             
-        #self._checkCookies()
-        if HLS == "false":
-            url = 'https://illicoweb.videotron.com/illicoservice'+pid
-            rtmpStream = True
-        else:
-            url = 'https://tabdroid2.videotron.com/illicoservice'+pid
-            rtmpStream = False
-
+        url = 'https://illicoweb.videotron.com/illicoservice'+pid
             
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
-        if result == 403 and HLS == "true":
-            addon_log('HLS content unavailable - falling back to rtmp')
-            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
-            rtmpStream = True
-            data, result = getRequest(url,urllib.urlencode(values),headers)
-        
+        if result == 403:
+            addon_log('Content unavailable... Forbidden')
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30001)))
+            return False
+            
         options = {'live': '1'}
 
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid, options, True, rtmpStream)):
+            if not (self._play(data, pid, options, True)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -1135,28 +1115,19 @@ class Main( viewtype ):
         if self._encrypted(pid):
             return False
 
-            
-        if HLS == "false":
-            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
-            rtmpStream = True
-        else:
-            url = 'https://tabdroid2.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
-            rtmpStream = False
-
-
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
             
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
         data, result = getRequest(url,urllib.urlencode(values),headers)
-        if result == 403 and HLS == "true":
-            addon_log('HLS content unavailable - falling back to rtmp')
-            url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
-            rtmpStream = True
-            data, result = getRequest(url,urllib.urlencode(values),headers)
+        if result == 403:
+            addon_log('Content unavailable... Forbidden')
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30001)))
+            return False
         
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid, {}, True, rtmpStream)): #unquote_plus(pid).replace( " ", "+" ))):
+            if not (self._play(data, pid, {}, True)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -1174,8 +1145,8 @@ class Main( viewtype ):
         try:
             info = json.loads(data)
         except:
-            addon_log('Encrypted media - cannot play.')
-            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
+            addon_log('Content unavailable... Forbidden')
+            xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30001)))
             return True
         
         encrypted = info['body']['main']['mediaEncryption']
@@ -1188,10 +1159,9 @@ class Main( viewtype ):
         addon_log('Not Encrypted media - requesting play.')        
         return False
             
-    def _play(self, data, pid, options={}, direct=False, rtmpStream=False):
+    def _play(self, data, pid, options={}, direct=False):
         info = json.loads(data)
         path = info['body']['main']['mainToken']
-        #encrypted = info['body']['main']['mediaEncryption']
         connected = info['head']['userInfo']['clubIllicoStatus']
         
         if connected == 'NOT_CONNECTED':
@@ -1200,32 +1170,12 @@ class Main( viewtype ):
                 xbmc.executebuiltin("Addon.OpenSettings(plugin.video.illicoweb)")
                 exit(0)                
         
-        #if encrypted:
-        #    xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30017)))
-        #    return False
-        
-        rtmp = path[:path.rfind('/')]
-        playpath = ' Playpath=' + path[path.rfind('/')+1:]
-        pageurl = ' pageUrl=' + unquote_plus(self.args.episode).replace( " ", "+" )
-        swfurl = ' swfUrl=https://illicoweb.videotron.com/media/public/swfVideoPlayer/vplayer_v1-6_222_prd.swf swfVfy=1'
-        
         win = xbmcgui.Window(10000)
         win.setProperty('illico.playing.title', xbmc.getInfoLabel( "ListItem.Property(playLabel)" ))
         win.setProperty('illico.playing.pid', unquote_plus(pid).replace( " ", "+" ))
         win.setProperty('illico.playing.watched', xbmc.getInfoLabel( "ListItem.Property(strwatched)" ))
 
-        
-        if 'live' in options.keys() and options['live']:
-            live = ' live=1'
-            win.setProperty('illico.playing.live', 'true')
-        else:
-            live = ''
-            win.setProperty('illico.playing.live', 'false')
-        
-        if rtmpStream:
-            final_url = rtmp+playpath+pageurl+swfurl+live
-        else:
-            final_url, code = getRequestedM3u8(path)
+        final_url = path
         addon_log('Attempting to play url: %s' % final_url)
     
         item = xbmcgui.ListItem(xbmc.getInfoLabel( "ListItem.Property(playLabel)" ), '', xbmc.getInfoLabel( "ListItem.Property(playThumb)" ), xbmc.getInfoLabel( "ListItem.Property(playThumb)" ))
