@@ -31,7 +31,10 @@ class DataManager():
             for episode in result['body']['main']['episodes']:
                 itemCount = itemCount + 1
                 dataHashString = dataHashString + str(itemCount) + "_" + episode['title'] + "_" + str(episode['id']) + "|"
-        
+        elif 'submenus' in result['body']['main']:
+            for submenu in result['body']['main']['submenus'][1]['submenus']:
+                itemCount = itemCount + 1
+                dataHashString = dataHashString + str(itemCount) + "_" + submenu['label'] + "_" + str(submenu['id']) + "|"
     
         # hash the data
         dataHashString = dataHashString.encode("UTF-8")
