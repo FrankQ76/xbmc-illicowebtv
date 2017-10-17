@@ -1,4 +1,5 @@
 
+
 # -*- coding: utf-8 -*-
 
 # *  This Program is free software; you can redistribute it and/or modify
@@ -1373,7 +1374,7 @@ class Main( viewtype ):
             print_exc()
 
     def _add_context_menu_items( self, c_items, listitem, replaceItems=True ):
-        c_items += [ ( LANGXBMC( 1045 ), "Addon.OpenSettings(plugin.video.illicoweb)" ) ]
+        c_items += [ ( LANGXBMC( 10140 ), "Addon.OpenSettings(plugin.video.illicoweb)" ) ]
         listitem.addContextMenuItems( c_items, replaceItems )        
 
     '''
