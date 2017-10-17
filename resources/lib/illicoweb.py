@@ -62,7 +62,7 @@ dataManager = DataManager()
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
 ADDON_NAME = ADDON.getAddonInfo( "name" )
-ADDON_VERSION = "2.2.0"
+ADDON_VERSION = "2.3.0"
 ADDON_PATH = xbmc.translatePath( ADDON.getAddonInfo( "path" ).decode('utf-8') )
 if (ADDON.getSetting( "cachePath" ) is '') or (not os.path.exists(ADDON.getSetting( "cachePath" ))):
     ADDON_CACHE = xbmc.translatePath( ADDON.getAddonInfo( "profile" ).decode('utf-8') )
