@@ -43,7 +43,7 @@ class DataManager():
     def loadJsonData(self, jsonData):
         return json.loads(jsonData)        
         
-    def GetContent(self, url):
+    def GetContent(self, url, forceCache=False):
     
         #  first get the url hash
         m = hashlib.md5()
@@ -57,7 +57,7 @@ class DataManager():
             os.makedirs(os.path.join(__addondir__, "cache"))
         cacheDataPath = os.path.join(__addondir__, "cache", urlHash)
         
-        illicoweb.addon_log("Cache_Data_Manager:" + cacheDataPath)
+        illicoweb.addon_log("Cache_Data_Manager: " + cacheDataPath)
         
         # are we forcing a reload
         WINDOW = xbmcgui.Window( 10000 )
@@ -74,13 +74,16 @@ class DataManager():
             try:
                 result = self.loadJsonData(jsonData)
 
-                # start a worker thread to process the cache validity
-                self.cacheDataResult = result
-                self.dataUrl = url
-                self.cacheDataPath = cacheDataPath
-                actionThread = CacheManagerThread()
-                actionThread.setCacheData(self)
-                actionThread.start()
+                if forceCache != True:
+                    # start a worker thread to process the cache validity
+                    self.cacheDataResult = result
+                    self.dataUrl = url
+                    self.cacheDataPath = cacheDataPath
+                    actionThread = CacheManagerThread()
+                    actionThread.setCacheData(self)
+                    actionThread.start()
+                else:
+                    illicoweb.addon_log("Cache_Data_Manager: Cache copy forced.")
 
                 illicoweb.addon_log("Cache_Data_Manager: Returning Cached Result")
                 return result

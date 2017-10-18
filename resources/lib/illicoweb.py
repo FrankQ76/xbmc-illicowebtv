@@ -187,9 +187,7 @@ def getRequestedUrl(url, data=None, headers=None, params=None):
 
     with session() as c:
         c.cookies = COOKIE_JAR
-        #c.cookies.load(ignore_discard=True)
         r = c.get(url, params = params, headers = headers, verify=False)
-        addon_log(r.url)
         c.cookies.save(ignore_discard=True)
         data = r.text
         code = r.status_code
@@ -552,7 +550,7 @@ class Main( viewtype ):
             print_exc()
             
     def _addEpisodesToSeason(self, data, season):
-        addon_log("-- Adding Episodes to Season")
+        addon_log("-- Adding Episodes to Season: %s" % season)
         OK = False
         listitems = self.natural_sort(self._getEpisodes(data, season), False) 
 
@@ -851,7 +849,7 @@ class Main( viewtype ):
             url = url + '&localeLang=' + LANGGUI
         else: url = url + '?localeLang=' + LANGGUI
         
-        return dataManager.GetContent(url)
+        return dataManager.GetContent(url, True)
         
 
     def _getShows(self, _url):
@@ -1311,10 +1309,10 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data = dataManager.GetContent(url)
 
         try:
-            jsonList = json.loads(data)['body']['main']
+            jsonList = data['body']['main']
             
             OK = False
             for i in jsonList:
