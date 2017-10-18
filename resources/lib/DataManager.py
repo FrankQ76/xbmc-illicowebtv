@@ -22,25 +22,9 @@ class DataManager():
     def getCacheValidatorFromData(self, result):
         if(result == None):
             result = []
-
-        itemCount = 0
-        unwatchedItemCount = 0        
-        dataHashString = "";
         
-        if 'episodes' in result['body']['main']:
-            for episode in result['body']['main']['episodes']:
-                itemCount = itemCount + 1
-                dataHashString = dataHashString + str(itemCount) + "_" + episode['title'] + "_" + str(episode['id']) + "|"
-        elif 'submenus' in result['body']['main']:
-            for submenu in result['body']['main']['submenus'][1]['submenus']:
-                itemCount = itemCount + 1
-                dataHashString = dataHashString + str(itemCount) + "_" + submenu['label'] + "_" + str(submenu['id']) + "|"
-    
         # hash the data
-        dataHashString = dataHashString.encode("UTF-8")
-        m = hashlib.md5()
-        m.update(dataHashString)
-        validatorString = m.hexdigest()
+        validatorString = hashlib.md5(json.dumps(result['body']['main'])).hexdigest()
         
         #xbmc.log("Cache_Data_Manager: getCacheValidatorFromData : RawData  : " + dataHashString)
         illicoweb.addon_log("Cache_Data_Manager: getCacheValidatorFromData : hashData : " + validatorString)
