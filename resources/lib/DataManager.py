@@ -57,6 +57,7 @@ class DataManager():
             os.makedirs(os.path.join(__addondir__, "cache"))
         cacheDataPath = os.path.join(__addondir__, "cache", urlHash)
         
+        illicoweb.addon_log("Cache_Data_Manager: Requested URL (%s)" % url)
         illicoweb.addon_log("Cache_Data_Manager: " + cacheDataPath)
         
         # are we forcing a reload
@@ -80,7 +81,7 @@ class DataManager():
                     self.dataUrl = url
                     self.cacheDataPath = cacheDataPath
                     actionThread = CacheManagerThread()
-                    actionThread.setCacheData(self)
+                    actionThread.setCacheData(self, self.cacheDataResult, self.dataUrl, self.cacheDataPath)
                     actionThread.start()
                 else:
                     illicoweb.addon_log("Cache_Data_Manager: Cache copy forced.")
@@ -102,21 +103,28 @@ class DataManager():
         illicoweb.addon_log("Cache_Data_Manager: Returning Loaded Result")        
         return result        
         
+    
 class CacheManagerThread(threading.Thread):
 
     dataManager = None
+    cacheDataResult = None
+    dataUrl = None
+    cacheDataPath = None
     
-    def setCacheData(self, data):
+    def setCacheData(self, data, cache, dataUrl, cacheDataPath):
         self.dataManager = data
+        self.cacheDataResult = cache
+        self.dataUrl = dataUrl
+        self.cacheDataPath = cacheDataPath
     
     def run(self):
     
         illicoweb.addon_log("Cache_Data_Manager: CacheManagerThread Started")
         
-        cacheValidatorString = self.dataManager.getCacheValidatorFromData(self.dataManager.cacheDataResult)
+        cacheValidatorString = self.dataManager.getCacheValidatorFromData(self.cacheDataResult)
         illicoweb.addon_log("Cache_Data_Manager: Cache Validator String (" + cacheValidatorString + ")")
         
-        jsonData, result = illicoweb.getRequest(self.dataManager.dataUrl)
+        jsonData, result = illicoweb.getRequest(self.dataUrl)
         loadedResult = self.dataManager.loadJsonData(jsonData)
         loadedValidatorString = self.dataManager.getCacheValidatorFromData(loadedResult)
         illicoweb.addon_log("Cache_Data_Manager: loaded Validator String (" + loadedValidatorString + ")")
@@ -124,7 +132,7 @@ class CacheManagerThread(threading.Thread):
         # if they dont match then save the data and trigger a content reload
         if(cacheValidatorString != loadedValidatorString):
             illicoweb.addon_log("Cache_Data_Manager: CacheManagerThread Saving new cache data and reloading container (%s != %s)" % (cacheValidatorString, loadedValidatorString))
-            cachedfie = open(self.dataManager.cacheDataPath, 'w')
+            cachedfie = open(self.cacheDataPath, 'w')
             cachedfie.write(jsonData.encode('utf-8'))
             cachedfie.close()
 
