@@ -83,6 +83,10 @@ REGIONS = ADDON.getSetting('regions')
 
 LANGXBMC = xbmc.getLocalizedString
 LANGUAGE = ADDON.getLocalizedString
+if 'English' in xbmc.getLanguage():
+    LANGGUI = 'en'
+else:
+    LANGGUI = 'fr'
 
 def addon_log(string):
     if DEBUG == 'true':
@@ -454,6 +458,9 @@ class Main( viewtype ):
         OK = False                
         try:
             label = i['name']
+            addon_log("-- Adding Channel: %s" % label)
+
+            
             episodeUrl = i['link']['uri']
 
             uri = sys.argv[ 0 ]
@@ -501,6 +508,9 @@ class Main( viewtype ):
                 label = i['name'] + " " + LANGUAGE(30003)
             else:
                 label = LANGUAGE(30003) #'-- En Direct / Live TV --'
+            addon_log("-- Adding Live Region: %s" % label)
+
+            
             liveUrl = i['selectionUrl']
             uri = sys.argv[ 0 ]
             item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
@@ -524,6 +534,7 @@ class Main( viewtype ):
                 label = LANGUAGE(30003) #'-- En Direct / Live TV --'
             if not 'orderURI' in i:
                 return
+            addon_log("-- Adding Live Channel: %s" % label)
                 
             episodeUrl = i['orderURI'] 
             uri = sys.argv[ 0 ]
@@ -552,8 +563,8 @@ class Main( viewtype ):
     
     
     def _addEpisode(self, ep, listitems):
-        addon_log("-- Adding Episode")
         label = ep['title']
+        addon_log("-- Adding Episode: %s" % label)
         if not 'orderURI' in ep:
             return
         seasonUrl = ep['orderURI']
@@ -603,9 +614,9 @@ class Main( viewtype ):
             print_exc()
 
     def _addSeasonsToShow(self, i, listitems, title=False):
-        addon_log("-- Adding Seasons to Show")
         seasonNo = i['seasonNo'] if 'seasonNo' in i else 0
         label = i['title'] + " - " + (LANGUAGE(30018) + " " + str(seasonNo)) if i['objectType'] == "SEASON" else i['title'] 
+        addon_log("-- Adding Seasons to Show: %s" % label)
 
         if title and not i['title'] in label: label = '%s - %s' % (i['title'], label)
         seasonUrl = i['link']['uri'] + ',' + str(seasonNo)
@@ -663,8 +674,8 @@ class Main( viewtype ):
             print_exc()
     
     def _addChannelToStingray(self, channel, listitems, fanart, url=None):
-        addon_log("-- Adding Channel to Stingray")
         label = channel['name']
+        addon_log("-- Adding Channel to Stingray: %s" % label)
         OK = False
         try:
             channelUrl = url or channel['orderURI']
@@ -693,7 +704,6 @@ class Main( viewtype ):
     
     
     def _addShowToChannel(self, season, listitems, fanart, url=None):
-        addon_log("-- Adding Show to Channel")
         if 'label' in season:
             label = season['label']
         elif 'name' in season:
@@ -702,8 +712,10 @@ class Main( viewtype ):
             label = season['title']
         else:
             label = "Unknown"
+        addon_log("-- Adding Show to Channel: %s" % label)
 
-        if label=='Home':
+        if season['link']['template'] == 'PROVIDER_LANDING':
+            addon_log("--   Skipping %s" % label)
             return
         OK = False                
         try:
@@ -734,12 +746,15 @@ class Main( viewtype ):
         values = {}
 
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=/channels/<channelName>/<showID>/<showName>
-        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +url
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' + url + '&localeLang=' + LANGGUI
         data = dataManager.GetContent(url)
 
         sections = data['body']['main']['sections']
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
         return dataManager.GetContent(url)
 
         
@@ -747,7 +762,7 @@ class Main( viewtype ):
     def _getChannel(self, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang=all'
+        url = 'https://illicoweb.videotron.com/illicoservice/channels/user?localeLang=' + LANGGUI
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -772,7 +787,7 @@ class Main( viewtype ):
         values = {}
 
         # get Channel sections to get URL for JSON shows
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url) + '&localeLang=all')
+        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url) + '&localeLang=' + LANGGUI)
         sections = json.loads(data)['body']['main']['sections']
 
         if (len(sections) == 1):
@@ -783,8 +798,8 @@ class Main( viewtype ):
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(sections[1]['contentDownloadURL'].replace( " ", "+" ))
         if '?' in url:
-            url = url + '&localeLang=all'
-        else: url = url + '?localeLang=all'
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
         data = dataManager.GetContent(url)
         
         listitems = []
@@ -833,8 +848,8 @@ class Main( viewtype ):
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice/content/'+id
         if '?' in url:
-            url = url + '&localeLang=all'
-        else: url = url + '?localeLang=all'
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
         
         return dataManager.GetContent(url)
         
@@ -846,10 +861,9 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ) + '&localeLang=all')
+        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ) + '&localeLang=' + LANGGUI)
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
-        addon_log("Getting fanart from URL: " + url)
         fanart = ""
         if 'backgroundURL' in json.loads(data)['body']['main']:
             fanart = "https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/" + json.loads(data)['body']['main']['backgroundURL'] #self._getChannelFanartImg(data)
@@ -886,7 +900,7 @@ class Main( viewtype ):
     def _getLiveRegion(self, url):
         #self._checkCookies()
 
-        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" ) + '&localeLang=all'
+        url = 'http://illicoweb.videotron.com/illicoservice/url?logicalUrl=' +unquote_plus(url).replace( " ", "+" ) + '&localeLang=' + LANGGUI
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -906,7 +920,7 @@ class Main( viewtype ):
     def _getStingray(self, url, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' + '&localeLang=all' #+unquote_plus(url).replace( " ", "+" )
+        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl=/chaines/Stingray' + '&localeLang=' + LANGGUI #+unquote_plus(url).replace( " ", "+" )
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -922,7 +936,7 @@ class Main( viewtype ):
     def _getShow(self, url, label):
         #self._checkCookies()
 
-        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" ) + '&localeLang=all'
+        url = 'https://illicoweb.videotron.com/illicoservice/url?logicalUrl='+unquote_plus(url).replace( " ", "+" ) + '&localeLang=' + LANGGUI
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -991,6 +1005,10 @@ class Main( viewtype ):
             return
         # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(url.replace( " ", "+" ))
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
+        
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
             'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -1006,6 +1024,9 @@ class Main( viewtype ):
         try:
             # url format: https://illicoweb.videotron.com/illicoservice/page/section/0000
             url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(url.replace( " ", "+" ))
+            if '?' in url:
+                url = url + '&localeLang=' + LANGGUI
+            else: url = url + '?localeLang=' + LANGGUI
             
             headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -1025,6 +1046,10 @@ class Main( viewtype ):
             return False
         #self._checkCookies()
         url = 'https://illicoweb.videotron.com/illicoservice'+pid
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
+        
         addon_log("Stingray music at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -1045,6 +1070,9 @@ class Main( viewtype ):
             return False
             
         url = 'https://illicoweb.videotron.com/illicoservice'+pid
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
             
         addon_log("Live show at: %s" %url)
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
@@ -1072,6 +1100,9 @@ class Main( viewtype ):
             return False
 
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
             
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
@@ -1093,6 +1124,9 @@ class Main( viewtype ):
             
     def _encrypted(self, pid):
         url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        if '?' in url:
+            url = url + '&localeLang=' + LANGGUI
+        else: url = url + '?localeLang=' + LANGGUI
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
@@ -1302,7 +1336,6 @@ class Main( viewtype ):
                 # all strings must be unicode but encoded, if necessary, as utf-8 to be passed on to urlencode!!
                 if isinstance(label, unicode):
                     labelUri = label.encode('utf-8')
-                addon_log("--- " + labelUri)
                 f = { 'label' : labelUri, 'category' : category, 'url' : url}
                 uri = '%s?addtofavourites=%s%s%s' % ( sys.argv[ 0 ], "%22", urllib.urlencode(f), "%22" ) #urlencode(f) )
                 
