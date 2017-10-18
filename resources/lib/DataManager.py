@@ -18,13 +18,22 @@ class DataManager():
     dataUrl = None
     cacheDataPath = None
     canRefreshNow = False
+    
+    def remove_dynamic_info(self, d):
+        if not isinstance(d, (dict, list)):
+            return d
+        if isinstance(d, list):
+            return [self.remove_dynamic_info(v) for v in d]
+        return {k: self.remove_dynamic_info(v) for k, v in d.items()
+                if k not in {'orderable'}}
         
     def getCacheValidatorFromData(self, result):
         if(result == None):
             result = []
         
         # hash the data
-        validatorString = hashlib.md5(json.dumps(result['body']['main'])).hexdigest()
+        jsonData = self.remove_dynamic_info(result)    
+        validatorString = hashlib.md5(json.dumps(jsonData['body']['main'])).hexdigest()
         
         #xbmc.log("Cache_Data_Manager: getCacheValidatorFromData : RawData  : " + dataHashString)
         illicoweb.addon_log("Cache_Data_Manager: getCacheValidatorFromData : hashData : " + validatorString)
@@ -111,7 +120,7 @@ class CacheManagerThread(threading.Thread):
         
         # if they dont match then save the data and trigger a content reload
         if(cacheValidatorString != loadedValidatorString):
-            illicoweb.addon_log("Cache_Data_Manager: CacheManagerThread Saving new cache data and reloading container")
+            illicoweb.addon_log("Cache_Data_Manager: CacheManagerThread Saving new cache data and reloading container (%s != %s)" % (cacheValidatorString, loadedValidatorString))
             cachedfie = open(self.dataManager.cacheDataPath, 'w')
             cachedfie.write(jsonData.encode('utf-8'))
             cachedfie.close()
