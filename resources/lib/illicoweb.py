@@ -494,51 +494,6 @@ class Main( viewtype ):
         except:
             print_exc()
 
-    def _addStingrayMusique(self, listitems, url):
-        OK = False                
-        try:
-            label = 'Stingray Musique'
-            episodeUrl = '/chaines/Stingray'
-
-            uri = sys.argv[ 0 ]
-            #item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'], 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/' + i['image'])
-            item = ( label, '', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png')
-            url = url %( uri, episodeUrl  )
-            
-            if xbmc.getLanguage() == "English":
-                plot = 'Stingray Music offers close to 50 digital audio channels that play uninterrupted, commercial-free music. All good vibes!'
-            else: plot = 'Le réseau de musique continue Stingray vous offre une sélection de près de cinquante chaînes, sans publicités ni interruptions.'
-            
-            infoLabels = {
-                "tvshowtitle": label,
-                "title":       label,
-                #"genre":       genreTitle,
-                "plot":        plot
-                #"season":      int(season) or -1
-                #"episode":     episode[ "EpisodeNumber" ] or -1,
-                #"year":        int( episode[ "Year" ] or "0" ),
-                #"Aired":       episode[ "AirDateLongString" ] or "",
-                #"mpaa":        episode[ "Rating" ] or "",
-                #"duration":    episode[ "LengthString" ] or "",
-                #"studio":      episode[ "Copyright" ] or "",
-                #"castandrole": scraper.setCastAndRole( episode ) or [],
-                #"writer":      episode[ "PeopleWriter" ] or episode[ "PeopleAuthor" ] or "",
-                #"director":    episode[ "PeopleDirector" ] or "",
-            }
-            
-            
-            listitem = xbmcgui.ListItem( *item )
-            listitem.setInfo( "Video", infoLabels )
-
-            listitem.setProperty( 'playLabel', label )
-            listitem.setProperty( 'playThumb', 'https://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/providers/stingmus_TF.png' )
-            listitem.setProperty( "fanart_image", 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/presse1.jpg') #'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/channels/' + ep['largeLogo'])
-            
-            category = 'channel'
-            #self._add_context_menu( label, episodeUrl, category, listitem, False, True )
-            listitems.append( ( url, listitem, True ) )
-        except:
-            print_exc()
     def _addLiveRegion(self, listitems, i, link, url, tag = False):
         OK = False
         try:
