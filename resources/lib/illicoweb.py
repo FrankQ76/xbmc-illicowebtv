@@ -94,6 +94,18 @@ def addon_log(string):
             string = string.encode('utf-8')
         xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string), xbmc.LOGNOTICE)
 
+def get_installedversion():
+    # retrieve current installed version
+    json_query = xbmc.executeJSONRPC('{ "jsonrpc": "2.0", "method": "Application.GetProperties", "params": {"properties": ["version", "name"]}, "id": 1 }')
+    if sys.version_info[0] >= 3:
+        json_query = str(json_query)
+    else:
+        json_query = unicode(json_query, 'utf-8', errors='ignore')
+    json_query = json.loads(json_query)
+    version_installed = []
+    if 'result' in json_query and 'version' in json_query['result']:
+        version_installed  = json_query['result']['version']['major']
+    return version_installed
 def sessionCheck():
     addon_log('SessionCheck: In progress...')
 
@@ -1056,7 +1068,7 @@ class Main( viewtype ):
         options = {'live': '1'}
 
         if (not data is None) and (result == 200):
-            if not (self._play(data, pid, options, True, True)):
+            if not (self._play(data, pid, options, True)):
                 addon_log("episode error")
         else:
             addon_log("Failed to get link - encrypted?")
@@ -1163,7 +1175,11 @@ class Main( viewtype ):
         win.setProperty('illico.playing.pid', unquote_plus(pid).replace( " ", "+" ))
         win.setProperty('illico.playing.watched', xbmc.getInfoLabel( "ListItem.Property(strwatched)" ))
 
-        final_url = path
+        if get_installedversion() < 17:
+            final_url, code = getRequestedM3u8(path)
+        else:
+            final_url = path
+            
         addon_log('Attempting to play url: %s' % final_url)
     
         item = xbmcgui.ListItem(xbmc.getInfoLabel( "ListItem.Property(playLabel)" ), '', xbmc.getInfoLabel( "ListItem.Property(playThumb)" ), xbmc.getInfoLabel( "ListItem.Property(playThumb)" ))
