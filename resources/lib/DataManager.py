@@ -23,9 +23,9 @@ class DataManager():
         if not isinstance(d, (dict, list)):
             return d
         if isinstance(d, list):
-            return [self.remove_dynamic_info(v) for v in d]
-        return {k: self.remove_dynamic_info(v) for k, v in d.items()
-                if k not in {'orderable'}}
+            return type(d)(self.remove_dynamic_info(v) for v in d)
+        return type(d)((k,self.remove_dynamic_info(v))
+            for k, v in d.items() if k not in 'orderable')
         
     def getCacheValidatorFromData(self, result):
         if(result == None):
