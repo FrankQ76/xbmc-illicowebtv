@@ -1079,7 +1079,7 @@ class Main( viewtype ):
         if self._encrypted(pid):
             return False
             
-        url = 'https://illicoweb.videotron.com/illicoservice'+pid
+        url = 'https://illicoweb.videotron.com/illicoservice'+pid+'?streamType=dash&drmSchemeName=widevine'
         if '?' in url:
             url = url + '&localeLang=' + LANGGUI
         else: url = url + '?localeLang=' + LANGGUI
@@ -1109,7 +1109,7 @@ class Main( viewtype ):
         if self._encrypted(pid):
             return False
 
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )+'?streamType=dash&drmSchemeName=widevine'
         if '?' in url:
             url = url + '&localeLang=' + LANGGUI
         else: url = url + '?localeLang=' + LANGGUI
@@ -1133,7 +1133,7 @@ class Main( viewtype ):
             
             
     def _encrypted(self, pid):
-        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )
+        url = 'https://illicoweb.videotron.com/illicoservice'+unquote_plus(pid).replace( " ", "+" )+'?streamType=dash&drmSchemeName=widevine'
         if '?' in url:
             url = url + '&localeLang=' + LANGGUI
         else: url = url + '?localeLang=' + LANGGUI
