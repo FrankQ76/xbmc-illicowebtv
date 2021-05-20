@@ -20,9 +20,9 @@
 import os
 import re
 import sys
-import cookielib
-import urllib
-import urllib2
+import http.cookiejar
+import urllib.request, urllib.parse, urllib.error
+import urllib.request, urllib.error, urllib.parse
 import xbmc
 import xbmcgui
 import xbmcaddon
@@ -45,19 +45,18 @@ def ubuntu_openssl_bug_965371(self, *args, **kwargs):
   old_init(self, *args, **kwargs)
 
 ssl.SSLSocket.__init__ = ubuntu_openssl_bug_965371
-
-from urllib import quote_plus, unquote_plus
+from urllib.parse import quote_plus, unquote_plus
 from requests import session
 
 from traceback import print_exc
 
 try:
-    from urlparse import parse_qs
+    from urllib.parse import parse_qs
 except ImportError:
     from cgi import parse_qs
-from urlparse import urlparse
+from urllib.parse import urlparse
 
-from DataManager import DataManager
+from .DataManager import DataManager
 dataManager = DataManager()
 
 ADDON = xbmcaddon.Addon(id='plugin.video.illicoweb')
@@ -70,7 +69,7 @@ else:
     ADDON_CACHE = xbmc.translatePath( ADDON.getSetting( "cachePath" ).decode('utf-8') )
 
 COOKIE = os.path.join(ADDON_CACHE, 'cookie')
-COOKIE_JAR = cookielib.LWPCookieJar(COOKIE)
+COOKIE_JAR = http.cookiejar.LWPCookieJar(COOKIE)
 
 ICON = os.path.join(ADDON_PATH, 'icon.png')
 FAVOURITES_XML = os.path.join( ADDON_CACHE, "favourites.xml" )
@@ -90,7 +89,7 @@ else:
 
 def addon_log(string):
     if DEBUG == 'true':
-        if isinstance(string, unicode):
+        if isinstance(string, str):
             string = string.encode('utf-8')
         xbmc.log("[Illicoweb-%s]: %s" %(ADDON_VERSION, string), xbmc.LOGNOTICE)
 
@@ -100,7 +99,7 @@ def get_installedversion():
     if sys.version_info[0] >= 3:
         json_query = str(json_query)
     else:
-        json_query = unicode(json_query, 'utf-8', errors='ignore')
+        json_query = str(json_query, 'utf-8', errors='ignore')
     json_query = json.loads(json_query)
     version_installed = []
     if 'result' in json_query and 'version' in json_query['result']:
@@ -206,12 +205,12 @@ def getRequestedUrl(url, data=None, headers=None, params=None):
 
     
     if (code == 404):
-        opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(COOKIE_JAR))
-        urllib2.install_opener(opener)
+        opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(COOKIE_JAR))
+        urllib.request.install_opener(opener)
         if (not params is None):
             url = url + "?" + params
-        req = urllib2.Request(url,data,headers)
-        response = urllib2.urlopen(req)
+        req = urllib.request.Request(url,data,headers)
+        response = urllib.request.urlopen(req)
         data = response.read()
         COOKIE_JAR.save(COOKIE, ignore_discard=True, ignore_expires=False)
         response.close()
@@ -279,7 +278,7 @@ def setWatched( strwatched, remove=False, refresh=True ):
 if re.search( '(GetCarrousel|"carrousel")', sys.argv[ 2 ] ):
     from GuiView import GuiView as viewtype
 else:
-    from PluginView import PluginView as viewtype 
+    from .PluginView import PluginView as viewtype 
 
 class Main( viewtype ):
     def __init__( self ):
@@ -431,7 +430,7 @@ class Main( viewtype ):
         if os.path.exists( FAVOURITES_XML ):
             favourites = open( FAVOURITES_XML, "r" ).read()
         else:
-            favourites = u'<favourites>\n</favourites>\n'
+            favourites = '<favourites>\n</favourites>\n'
         if isinstance(favourites, str):
             favourites = favourites.decode('utf-8')
         
@@ -451,7 +450,7 @@ class Main( viewtype ):
             else:
                 favourites = favourites.replace( '</favourites>', '  %s\n</favourites>' % (favourite))
                 refresh = False
-            if isinstance(favourites, unicode):
+            if isinstance(favourites, str):
                 favourites = favourites.encode('utf-8')
             file( FAVOURITES_XML, "w" ).write( favourites )
             if refresh:
@@ -776,7 +775,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
 
         jsonList = json.loads(data)['body']['main']
 
@@ -797,7 +796,7 @@ class Main( viewtype ):
         values = {}
 
         # get Channel sections to get URL for JSON shows
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url) + '&localeLang=' + LANGGUI)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers, 'logicalUrl=' + unquote_plus(_url) + '&localeLang=' + LANGGUI)
         sections = json.loads(data)['body']['main']['sections']
 
         if (len(sections) == 1):
@@ -871,7 +870,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ) + '&localeLang=' + LANGGUI)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers, 'logicalUrl=' +unquote_plus(_url).replace( " ", "+" ) + '&localeLang=' + LANGGUI)
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         fanart = ""
@@ -914,7 +913,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
       
         # url format: http://illicoweb.videotron.com/illicoservice/url?logicalUrl=chaines/ChannelName
         addon_log("Getting fanart from URL: " + url)
@@ -934,7 +933,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         #data = self._getChannelShowsJSON(data)
         
         channels = json.loads(data)['body']['main']['provider']['channels']   
@@ -950,7 +949,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         data = self._getChannelShowsJSON(data) or data
 
         shows = data['body']['main']
@@ -1041,7 +1040,7 @@ class Main( viewtype ):
             headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                 'Referer' : 'https://illicoweb.videotron.com/accueil'}
             values = {}
-            data, result = getRequest(url,urllib.urlencode(values),headers)
+            data, result = getRequest(url,urllib.parse.urlencode(values),headers)
             img = json.loads(data)['body']['main'][0]
             return 'http://static-illicoweb.videotron.com/illicoweb/static/webtv/images/content/custom/' + img['image']    
         except:
@@ -1064,7 +1063,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         options = {'live': '1'}
 
         if (not data is None) and (result == 200):
@@ -1088,7 +1087,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         if result == 403:
             addon_log('Content unavailable... Forbidden')
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30001)))
@@ -1117,7 +1116,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         if result == 403:
             addon_log('Content unavailable... Forbidden')
             xbmcgui.Dialog().ok(ADDON_NAME, '%s' % (LANGUAGE(30001)))
@@ -1140,7 +1139,7 @@ class Main( viewtype ):
         headers = {'User-agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:19.0) Gecko/20100101 Firefox/19.0',
                    'Referer' : 'https://illicoweb.videotron.com/accueil'}
         values = {}
-        data, result = getRequest(url,urllib.urlencode(values),headers)
+        data, result = getRequest(url,urllib.parse.urlencode(values),headers)
         
         try:
             info = json.loads(data)
@@ -1203,7 +1202,7 @@ class Main( viewtype ):
         for i in COOKIE_JAR:
             cookies[i.name] = i.value
             addon_log('%s: %s' %(i.name, i.value))
-        if cookies.has_key('iPlanetDirectoryPro') or cookies.has_key('session-illico-profile'):
+        if 'iPlanetDirectoryPro' in cookies or 'session-illico-profile' in cookies:
             addon_log('We have valid cookies')
             login_ = 'old'
         else:
@@ -1224,7 +1223,7 @@ class Main( viewtype ):
             from xml.dom.minidom import parseString
 
             xmlFav = open( FAVOURITES_XML, "r" ).read()
-            if isinstance(xmlFav, unicode):
+            if isinstance(xmlFav, str):
                 xmlFav = xmlFav.encode('utf-8')
             favourites = parseString( xmlFav).getElementsByTagName( "favourite" )
             
@@ -1348,10 +1347,10 @@ class Main( viewtype ):
             #add to my favourites
             if category is not 'episode':
                 # all strings must be unicode but encoded, if necessary, as utf-8 to be passed on to urlencode!!
-                if isinstance(label, unicode):
+                if isinstance(label, str):
                     labelUri = label.encode('utf-8')
                 f = { 'label' : labelUri, 'category' : category, 'url' : url}
-                uri = '%s?addtofavourites=%s%s%s' % ( sys.argv[ 0 ], "%22", urllib.urlencode(f), "%22" ) #urlencode(f) )
+                uri = '%s?addtofavourites=%s%s%s' % ( sys.argv[ 0 ], "%22", urllib.parse.urlencode(f), "%22" ) #urlencode(f) )
                 
                 if self.args.favoris == "root":
                     c_items += [ ( LANGUAGE(30005), "RunPlugin(%s)" % uri.replace( "addto", "removefrom" ) ) ]
@@ -1401,8 +1400,8 @@ class Main( viewtype ):
 
                 
     def remove_accents(self, input_str):
-        nkfd_form = unicodedata.normalize('NFKD', unicode(input_str))
-        return u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
+        nkfd_form = unicodedata.normalize('NFKD', str(input_str))
+        return "".join([c for c in nkfd_form if not unicodedata.combining(c)])
 
     def escapeSpecialCharacters (self, text): 
         return re.sub(r'([\.\\\+\*\?\[\^\]\$\(\)\{\}\!\<\>\|\:])', r'\\\1', text)
@@ -1412,7 +1411,7 @@ class Info:
     def __init__( self, *args, **kwargs ):
         # update dict with our formatted argv
         addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
-        try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
+        try: exec("self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/")))
         except: print_exc()
         # update dict with custom kwargs
         self.__dict__.update( kwargs )

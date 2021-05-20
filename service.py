@@ -148,7 +148,7 @@ class Service(xbmc.Player):
             addon_log( "Begin playback of pid %s" % (self.pid) )
             
             if ADDON.getSetting('resume') == 'true':
-                if not self.live == 'true' and self.pid in self.resume.keys():
+                if not self.live == 'true' and self.pid in list(self.resume.keys()):
                     bookmark = self.resume[self.pid]
                     if not (self._sought and (bookmark - 30 > 0)):
                         question = LANGUAGE(30008) #'Reprendre la position %s?' % (format_time(bookmark))
@@ -233,12 +233,12 @@ class Service(xbmc.Player):
                     pid_to_date_added_map.append( (pids[i], datesAdded[i]) )
             resume = dict(pid_to_resume_point_map)
             dates_added = dict(pid_to_date_added_map)
-            addon_log('Found %d resume entries' % (len(resume.keys())))
+            addon_log('Found %d resume entries' % (len(list(resume.keys()))))
         return resume, dates_added
 
     def delete_resume_point(self, pid_to_delete):
         addon_log('Deleting resume point for pid %s' % pid_to_delete)
-        if pid_to_delete in self.resume.keys():
+        if pid_to_delete in list(self.resume.keys()):
             addon_log('Found resume point for pid %s, deleting...' % pid_to_delete)
             del self.resume[pid_to_delete]
             del self.dates_added[pid_to_delete]
@@ -250,10 +250,10 @@ class Service(xbmc.Player):
         """
         str = ""
         RESUME_FILE = getResumeDB()
-        addon_log('Saving %d entries to %s' % (len(resume.keys()), RESUME_FILE))
+        addon_log('Saving %d entries to %s' % (len(list(resume.keys())), RESUME_FILE))
         resume_fh = open(RESUME_FILE, 'w')
         try:
-            for pid, seekTime in resume.items():
+            for pid, seekTime in list(resume.items()):
                 str += "%s %f %d\n" % (pid, seekTime, dates_added[pid])
             resume_fh.write(str)
         finally:

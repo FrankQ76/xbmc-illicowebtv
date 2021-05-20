@@ -8,7 +8,7 @@ import xbmcgui
 import xbmcaddon
 import xbmc
 
-import illicoweb
+from . import illicoweb
 
 # *** Thank you MediaBrowser for such a neat implementation
 
@@ -25,7 +25,7 @@ class DataManager():
         if isinstance(d, list):
             return type(d)(self.remove_dynamic_info(v) for v in d)
         return type(d)((k,self.remove_dynamic_info(v))
-            for k, v in d.items() if k not in 'orderable')
+            for k, v in list(d.items()) if k not in 'orderable')
         
     def getCacheValidatorFromData(self, result):
         if(result == None):
