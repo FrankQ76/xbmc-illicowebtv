@@ -3,8 +3,8 @@
   <!-- General -->
   <category label="30011">
 
-    <setting label="30012" type="text"   id="username" enable="!eq(-1,)" default=""/>
-    <setting label="30013" type="text"   id="password" option="hidden"  enable="!eq(-1,)" default=""/>
+    <setting label="30012" type="text"   id="username" default=""/>
+    <setting label="30013" type="text"   id="password" option="hidden"  default=""/>
     
     <setting type="sep" />
     <setting label="30014" type="bool" id="resume" default="true"/>
