@@ -1412,7 +1412,8 @@ class Info:
     def __init__( self, *args, **kwargs ):
         # update dict with our formatted argv
         addon_log('__init__ addon received: %s' % sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
-        try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
+        ##try: exec "self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/"))
+        try: exec("self.__dict__.update(%s)" % ( sys.argv[ 2 ][ 1: ].replace( "&", ", " ).replace("%22",'"').replace("%2B","/plus/")))
         except: print_exc()
         # update dict with custom kwargs
         self.__dict__.update( kwargs )
